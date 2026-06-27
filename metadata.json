@@ -1,0 +1,6 @@
+{
+  "name": "Android Personal Notes",
+  "description": "An elegant, premium and highly polished Android-only personal notes application requiring an active internet connection to authenticate and sync user data securely.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users collection rules: User can only read and write their own profile
+    match /users/{userId} {
+      allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Public users for identifier check and name lookup
+    match /public_users/{identifier} {
+      allow read, write: if true;
+    }
+    
+    // Notes collection rules: User can only view, create, edit, or delete their own notes
+    match /notes/{noteId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if request.auth != null && (
+        // When creating a new document, the request data userId must match
+        (resource == null && request.resource.data.userId == request.auth.uid) ||
+        // When updating or deleting an existing document, the document owner must match
+        (resource != null && resource.data.userId == request.auth.uid)
+      );
+    }
+
+    // Shop Items collection rules: read and write permitted
+    match /shop_items/{itemId} {
+      allow read, write: if true;
+    }
+
+    // Clip Packages collection rules: read and write permitted
+    match /clip_packages/{packageId} {
+      allow read, write: if true;
+    }
+
+    // Admin action logs: read and write permitted
+    match /admin_logs/{logId} {
+      allow read, write: if true;
+    }
+  }
+}

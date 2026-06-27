@@ -1,0 +1,194 @@
+{
+  "entities": {
+    "user": {
+      "title": "User Account",
+      "description": "User profile, balance, and owned themes metadata.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The full name of the user"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "The URL of the user's avatar image"
+        },
+        "premiumCoins": {
+          "type": "number",
+          "description": "The balance of in-app coins for theme purchases"
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's registered email address"
+        },
+        "phone": {
+          "type": "string",
+          "description": "The user's registered phone number"
+        },
+        "idCode": {
+          "type": "string",
+          "description": "Unique generated user ID starting with #"
+        },
+        "ownedThemes": {
+          "type": "array",
+          "description": "List of color theme hex values currently owned by this user"
+        },
+        "selectedPreset": {
+          "type": "object",
+          "description": "Flutter preview color preset"
+        }
+      },
+      "required": ["name", "premiumCoins"]
+    },
+    "note": {
+      "title": "Note",
+      "description": "A notebook entry created by the user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The owner's authenticated user ID link"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the note"
+        },
+        "content": {
+          "type": "string",
+          "description": "Markdown note text contents"
+        },
+        "category": {
+          "type": "string",
+          "description": "Notebook folder category of the entry"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp string or ISO string"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The time of creation of this note"
+        },
+        "color": {
+          "type": "string",
+          "description": "The theme color hex for this individual note's highlight card"
+        }
+      },
+      "required": ["userId", "title", "content"]
+    },
+    "shop_item": {
+      "title": "Shop Item",
+      "description": "An item available in the theme store.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the shop item"
+        },
+        "name": {
+          "type": "string",
+          "description": "The title name of the shop item"
+        },
+        "secondaryName": {
+          "type": "string",
+          "description": "Sub-text description or secondary title"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the shop item in CLIP coins"
+        },
+        "color": {
+          "type": "string",
+          "description": "Hex theme color value"
+        },
+        "primary": {
+          "type": "string",
+          "description": "Primary color hex"
+        },
+        "accent": {
+          "type": "string",
+          "description": "Accent color hex"
+        },
+        "darkBg": {
+          "type": "string",
+          "description": "Dark theme background color hex"
+        },
+        "lightBg": {
+          "type": "string",
+          "description": "Light theme background color hex"
+        },
+        "category": {
+          "type": "string",
+          "description": "Store category classification"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp string of creation"
+        }
+      },
+      "required": ["id", "name", "price"]
+    },
+    "clip_package": {
+      "title": "Clip Package",
+      "description": "A purchasable coin package containing standard coins and customizable promotional badges.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique package identifier"
+        },
+        "numCoins": {
+          "type": "number",
+          "description": "Number of CLIP coins in the package"
+        },
+        "priceString": {
+          "type": "string",
+          "description": "Display price e.g., $1.99 or HK$15.00"
+        },
+        "region": {
+          "type": "string",
+          "description": "Store region e.g. USA or HK"
+        },
+        "isHot": {
+          "type": "boolean",
+          "description": "Whether package is highlighted as a popular choice"
+        },
+        "labelText": {
+          "type": "string",
+          "description": "Promo badge label text displayed over clip logo when clicked/selected e.g., ( 4$ 95%)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp string"
+        }
+      },
+      "required": ["id", "numCoins", "priceString", "region"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/user"
+      },
+      "description": "User profiles storing metadata and wallet state"
+    },
+    "/notes/{noteId}": {
+      "schema": {
+        "$ref": "#/entities/note"
+      },
+      "description": "Secure user notes collection indexed by ID"
+    },
+    "/shop_items/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/shop_item"
+      },
+      "description": "Color Theme items sold in the store"
+    },
+    "/clip_packages/{packageId}": {
+      "schema": {
+        "$ref": "#/entities/clip_package"
+      },
+      "description": "Premium CLIP coin package configuration list"
+    }
+  }
+}
