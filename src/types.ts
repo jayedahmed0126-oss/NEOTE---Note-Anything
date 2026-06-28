@@ -31,6 +31,7 @@ export interface UserAccount {
   country?: string;
   idCode?: string;
   role?: string;
+  createdAt?: string;
 }
 
 export interface DeviceSession {

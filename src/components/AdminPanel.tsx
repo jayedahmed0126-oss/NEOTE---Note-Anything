@@ -57,6 +57,18 @@ export default function AdminPanel({
   // Logs and History drawer state
   const [logs, setLogs] = useState<any[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [lastViewedTimestamp, setLastViewedTimestamp] = useState<string>(() => {
+    return localStorage.getItem('neote_last_viewed_logs_ts') || '';
+  });
+
+  // Automatically mark all current logs as viewed when the history drawer is opened
+  useEffect(() => {
+    if (isHistoryOpen) {
+      const now = new Date().toISOString();
+      localStorage.setItem('neote_last_viewed_logs_ts', now);
+      setLastViewedTimestamp(now);
+    }
+  }, [isHistoryOpen]);
 
   // Themes List state
   const [items, setItems] = useState<ShopItem[]>([]);
@@ -205,7 +217,9 @@ export default function AdminPanel({
           fetchedPkgs.sort((a, b) => {
             const reg = (a.region || '').localeCompare(b.region || '');
             if (reg !== 0) return reg;
-            return (a.numCoins || 0) - (b.numCoins || 0);
+            const coinDiff = (a.numCoins || 0) - (b.numCoins || 0);
+            if (coinDiff !== 0) return coinDiff;
+            return (a.priceString || '').localeCompare(b.priceString || '');
           });
           setPackages(fetchedPkgs);
           setLoadingPackages(false);
@@ -476,28 +490,53 @@ export default function AdminPanel({
             background: `linear-gradient(135deg, ${selectedPreset.primaryColorHex}E0 0%, ${themeMode === 'DARK' ? '#0a0f1d' : '#f1faf6'} 100%)`,
             borderColor: `${selectedPreset.primaryColorHex}26`
           }}
-          className="px-5 pb-5 pt-12 flex items-center relative overflow-hidden shrink-0 border-b w-full"
+          className="px-5 pb-5 pt-12 flex items-center justify-between relative overflow-hidden shrink-0 border-b w-full"
         >
-          {/* Back button top left */}
-          <button 
-            onClick={onClose}
-            className="mr-4 w-9 h-9 rounded-full bg-black/35 hover:bg-black/55 flex items-center justify-center text-white cursor-pointer active:scale-95 transition-all border border-white/10 shrink-0"
-            title="Back to App"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+          <div className="flex items-center">
+            {/* Back button top left */}
+            <button 
+              onClick={onClose}
+              className="mr-4 w-9 h-9 rounded-full bg-black/35 hover:bg-black/55 flex items-center justify-center text-white cursor-pointer active:scale-95 transition-all border border-white/10 shrink-0"
+              title="Back to App"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
 
-          <div className="flex items-center space-x-2">
-            <Shield className="w-5 h-5 text-white animate-pulse" />
-            <div>
-              <h3 className="text-sm font-black tracking-tight text-white uppercase">
-                Admin Panel
-              </h3>
-              <span className="text-[8.5px] font-bold text-teal-100 tracking-widest uppercase block mt-0.5">
-                Firebase Real-time Store Stream
-              </span>
+            <div className="flex items-center space-x-2">
+              <Shield className="w-5 h-5 text-white animate-pulse" />
+              <div>
+                <h3 className="text-sm font-black tracking-tight text-white uppercase">
+                  Admin Panel
+                </h3>
+                <span className="text-[8.5px] font-bold text-teal-100 tracking-widest uppercase block mt-0.5">
+                  Firebase Real-time Store Stream
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* History Button in the Top Right */}
+          {(() => {
+            const unseenLogsCount = logs.filter(log => {
+              if (!lastViewedTimestamp) return true;
+              return (log.timestamp || '') > lastViewedTimestamp;
+            }).length;
+            return (
+              <button
+                type="button"
+                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                className="w-9 h-9 rounded-full bg-black/35 hover:bg-black/55 flex items-center justify-center text-white cursor-pointer active:scale-95 transition-all border border-white/10 shrink-0 relative"
+                title="Admin Logs History"
+              >
+                <History className="w-5 h-5" />
+                {unseenLogsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-[8px] font-bold text-white px-1.5 py-0.5 rounded-full animate-bounce">
+                    {unseenLogsCount}
+                  </span>
+                )}
+              </button>
+            );
+          })()}
         </div>
 
         {/* Dual-Tab selector */}
@@ -1681,6 +1720,10 @@ export default function AdminPanel({
                         try {
                           await deleteDoc(docRef);
                           triggerNotification(`Successfully deleted package "${id}"!`);
+                          await logAdminAction(
+                            'DELETE_PACKAGE',
+                            `Deleted Clip Package: ${id}`
+                          );
                         } catch (err: any) {
                           console.error("Delete Package Fail:", err);
                           triggerNotification("Failed to delete package.");
@@ -1693,6 +1736,10 @@ export default function AdminPanel({
                         try {
                           await deleteDoc(docRef);
                           triggerNotification(`Successfully deleted theme "${id}"!`);
+                          await logAdminAction(
+                            'DELETE_THEME',
+                            `Deleted Theme Shop Item: ${id}`
+                          );
                         } catch (err: any) {
                           console.error("Delete Theme Fail:", err);
                           triggerNotification("Failed to delete theme.");
@@ -1706,6 +1753,113 @@ export default function AdminPanel({
                   >
                     Yes, Delete
                   </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Admin Panel History Sidebar/Drawer */}
+          {isHistoryOpen && (
+            <div className="absolute inset-0 z-50 flex justify-end">
+              {/* Backdrop */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsHistoryOpen(false)}
+                className="absolute inset-0 bg-black/60 backdrop-blur-[1px] cursor-pointer"
+              />
+
+              {/* Drawer panel */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: '0' }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+                className={`w-full max-w-sm h-full flex flex-col relative z-10 border-l relative ${
+                  themeMode === 'DARK' ? 'bg-[#0b0f19] border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-950'
+                }`}
+              >
+                {/* Header */}
+                <div className={`p-4 border-b flex items-center justify-between shrink-0 ${
+                  themeMode === 'DARK' ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    <History className="w-4 h-4" style={{ color: selectedPreset.primaryColorHex }} />
+                    <span className="text-xs font-black tracking-widest uppercase">Admin Action History</span>
+                  </div>
+                  <button
+                    onClick={() => setIsHistoryOpen(false)}
+                    className="w-7 h-7 rounded-full bg-slate-800/10 dark:bg-white/10 hover:bg-slate-800/20 dark:hover:bg-white/20 flex items-center justify-center cursor-pointer active:scale-95 transition-all text-current"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Subtitle / explanation */}
+                <div className={`px-4 py-2 text-[9px] uppercase tracking-wide border-b leading-relaxed ${
+                  themeMode === 'DARK' ? 'bg-slate-950 text-slate-400 border-slate-900' : 'bg-slate-100 text-slate-500 border-slate-200'
+                }`}>
+                  Stored in <span className="font-mono text-amber-500">Firestore: admin_logs</span>
+                </div>
+
+                {/* Log List */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3.5 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+                  {logs.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center opacity-60 py-10">
+                      <Clock className="w-8 h-8 mb-2 animate-pulse" />
+                      <p className="text-xs font-bold uppercase tracking-wider">No Admin Actions Logged Yet</p>
+                      <p className="text-[9.5px] text-slate-400 mt-1 max-w-[200px] leading-normal">
+                        Changes to themes and clip packages will appear here in real-time.
+                      </p>
+                    </div>
+                  ) : (
+                    logs.map((log) => (
+                      <div 
+                        key={log.id} 
+                        className={`p-3 rounded-xl border text-left flex flex-col space-y-1.5 transition-all ${
+                          themeMode === 'DARK' 
+                            ? 'bg-slate-900/30 border-slate-800 hover:border-slate-700/80' 
+                            : 'bg-[#F8FAFC] border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {/* Action Header */}
+                        <div className="flex justify-between items-start">
+                          <span 
+                            className="text-[9.5px] font-black uppercase tracking-widest px-2 py-0.5 rounded"
+                            style={{ 
+                              backgroundColor: `${selectedPreset.primaryColorHex}12`,
+                              color: selectedPreset.primaryColorHex 
+                            }}
+                          >
+                            {log.action}
+                          </span>
+                          <span className="text-[8.5px] font-mono text-slate-400">
+                            {log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A'}
+                          </span>
+                        </div>
+
+                        {/* Details */}
+                        <div className="text-xs leading-relaxed font-semibold break-words text-slate-300 dark:text-slate-100 font-sans">
+                          {log.details}
+                        </div>
+
+                        {/* Admin info & date footer */}
+                        <div className="flex flex-col space-y-0.5 pt-1 border-t border-dashed border-slate-800/80">
+                          <div className="flex items-center justify-between text-[8.5px]">
+                            <span className="text-slate-400 uppercase tracking-wider font-bold">Admin:</span>
+                            <span className="font-mono text-teal-400 break-all max-w-[200px] text-right font-extrabold">{log.adminId}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[8.5px] text-slate-400">
+                            <span className="uppercase tracking-wider font-bold">When:</span>
+                            <span className="font-mono text-slate-300">
+                              {log.timestamp ? new Date(log.timestamp).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </motion.div>
             </div>

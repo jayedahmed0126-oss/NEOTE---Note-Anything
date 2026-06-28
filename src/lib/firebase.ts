@@ -637,22 +637,41 @@ function triggerMockSnapshot(colName: string) {
     }
     docs.sort((a, b) => a.id.localeCompare(b.id));
   } else if (colName === 'clip_packages') {
-    const seededKey = 'neote_mock_clip_packages_seeded';
+    const seededKey = 'neote_mock_clip_packages_seeded_v4';
     if (!localStorage.getItem(seededKey)) {
+      // Clean up legacy mock package keys
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('neote_mock_doc_clip_packages_')) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+
       const defaultClipPackages = [
-        { id: 'usa_100', numCoins: 100, priceString: '$1.00', region: 'USA', isHot: false, createdAt: new Date().toISOString() },
-        { id: 'usa_500', numCoins: 500, priceString: '$4.99', region: 'USA', isHot: true, createdAt: new Date().toISOString() },
-        { id: 'usa_1200', numCoins: 1200, priceString: '$9.99', region: 'USA', isHot: false, createdAt: new Date().toISOString() },
-        { id: 'usa_2500', numCoins: 2500, priceString: '$19.99', region: 'USA', isHot: false, createdAt: new Date().toISOString() },
-        { id: 'usa_5000', numCoins: 5000, priceString: '$34.99', region: 'USA', isHot: false, createdAt: new Date().toISOString() },
-        { id: 'usa_10000', numCoins: 10000, priceString: '$59.99', region: 'USA', isHot: false, createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_1', numCoins: 100, priceString: '$0.99', region: 'USA', isHot: false, labelText: '0.99$ gpc', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_2', numCoins: 50, priceString: '$0.51', region: 'USA', isHot: false, labelText: '0.5$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_3', numCoins: 100, priceString: '$1.01', region: 'USA', isHot: false, labelText: '1$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_4', numCoins: 200, priceString: '$2.01', region: 'USA', isHot: false, labelText: '2$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_5', numCoins: 300, priceString: '$3.01', region: 'USA', isHot: false, labelText: '3$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_6', numCoins: 400, priceString: '$4.01', region: 'USA', isHot: false, labelText: '4$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_7', numCoins: 500, priceString: '$5.01', region: 'USA', isHot: false, labelText: '5$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_8', numCoins: 600, priceString: '$6.01', region: 'USA', isHot: false, labelText: '6$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_9', numCoins: 1000, priceString: '$10.01', region: 'USA', isHot: false, labelText: '10$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_10', numCoins: 445, priceString: '$4.45', region: 'USA', isHot: false, labelText: '90% 4$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_11', numCoins: 420, priceString: '$4.20', region: 'USA', isHot: false, labelText: '95% 4$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_12', numCoins: 535, priceString: '$5.34', region: 'USA', isHot: false, labelText: '75% 4$', createdAt: new Date().toISOString() },
+        { id: 'usa_pkg_13', numCoins: 1100, priceString: '$10.55', region: 'USA', isHot: false, labelText: '95% 10$', createdAt: new Date().toISOString() },
         
-        { id: 'hk_100', numCoins: 100, priceString: 'HK$8.00', region: 'HK', isHot: false, createdAt: new Date().toISOString() },
-        { id: 'hk_500', numCoins: 500, priceString: 'HK$38.00', region: 'HK', isHot: true, createdAt: new Date().toISOString() },
-        { id: 'hk_1200', numCoins: 1200, priceString: 'HK$78.00', region: 'HK', isHot: false, createdAt: new Date().toISOString() },
-        { id: 'hk_2500', numCoins: 2500, priceString: 'HK$158.00', region: 'HK', isHot: false, createdAt: new Date().toISOString() },
-        { id: 'hk_5000', numCoins: 5000, priceString: 'HK$268.00', region: 'HK', isHot: false, createdAt: new Date().toISOString() },
-        { id: 'hk_10000', numCoins: 10000, priceString: 'HK$468.00', region: 'HK', isHot: false, createdAt: new Date().toISOString() }
+        { id: 'hk_pkg_1', numCoins: 135, priceString: '10.10 HKD', region: 'HK', isHot: false, labelText: '10 HK$', createdAt: new Date().toISOString() },
+        { id: 'hk_pkg_2', numCoins: 270, priceString: '20.10 HKD', region: 'HK', isHot: false, labelText: '20 HK$', createdAt: new Date().toISOString() },
+        { id: 'hk_pkg_3', numCoins: 540, priceString: '40.10 HKD', region: 'HK', isHot: false, labelText: '40 HK$', createdAt: new Date().toISOString() },
+        { id: 'hk_pkg_4', numCoins: 675, priceString: '50.10 HKD', region: 'HK', isHot: false, labelText: '50 HK$', createdAt: new Date().toISOString() },
+        { id: 'hk_pkg_5', numCoins: 145, priceString: '10.60 HKD', region: 'HK', isHot: false, labelText: '95% 10 HK$', createdAt: new Date().toISOString() },
+        { id: 'hk_pkg_6', numCoins: 285, priceString: '20.10 HKD', region: 'HK', isHot: false, labelText: '95% 20 HK$', createdAt: new Date().toISOString() },
+        { id: 'hk_pkg_7', numCoins: 565, priceString: '42.10 HKD', region: 'HK', isHot: false, labelText: '95% 40 HK$', createdAt: new Date().toISOString() },
+        { id: 'hk_pkg_8', numCoins: 710, priceString: '52.70 HKD', region: 'HK', isHot: false, labelText: '95% 50 HK$', createdAt: new Date().toISOString() }
       ];
       defaultClipPackages.forEach(item => {
         localStorage.setItem(`neote_mock_doc_clip_packages_${item.id}`, JSON.stringify(item));

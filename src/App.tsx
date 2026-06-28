@@ -10,6 +10,8 @@ import {
   Trash2, 
   Facebook, 
   MessageSquare, 
+  MessageCircle,
+  Send,
   Home as HomeIcon, 
   ShoppingBag, 
   Settings as SettingsIcon, 
@@ -149,25 +151,6 @@ const SHOP_THEMES = [
 ];
 
 function generateUniqueIdCode(emailOrPhone?: string): string {
-  const cleanId = (emailOrPhone || '').trim().toLowerCase();
-  if (cleanId) {
-    let hash = 0;
-    for (let i = 0; i < cleanId.length; i++) {
-      hash = (hash << 5) - hash + cleanId.charCodeAt(i);
-      hash |= 0;
-    }
-    hash = Math.abs(hash);
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '#';
-    let tempHash = hash;
-    for (let i = 0; i < 7; i++) {
-      result += chars.charAt(tempHash % chars.length);
-      tempHash = Math.floor(tempHash / chars.length) || (hash + i + 19);
-    }
-    return result;
-  }
-
-  // Fallback
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let result = '#';
   for (let i = 0; i < 7; i++) {
@@ -221,8 +204,9 @@ export default function App() {
           phone: phoneVal,
           email: emailVal,
           country: parsed.country || 'Bangladesh',
-          idCode: generateUniqueIdCode(emailVal || phoneVal),
-          role: parsed.role || 'user'
+          idCode: parsed.idCode || generateUniqueIdCode(emailVal || phoneVal),
+          role: parsed.role || 'user',
+          createdAt: parsed.createdAt || new Date().toISOString()
         };
       } catch (e) {
         // Fallback
@@ -236,7 +220,8 @@ export default function App() {
       email: '',
       country: 'Bangladesh',
       idCode: generateUniqueIdCode(),
-      role: 'user'
+      role: 'user',
+      createdAt: new Date().toISOString()
     };
   });
 
@@ -253,7 +238,11 @@ export default function App() {
         email: userAccount.email || '',
         country: userAccount.country || '',
         idCode: userAccount.idCode || '',
-        role: userAccount.role || 'user'
+        "USER ID": userAccount.idCode || '',
+        "User ID": userAccount.idCode || '',
+        userId: userAccount.idCode || '',
+        role: userAccount.role || 'user',
+        createdAt: userAccount.createdAt || new Date().toISOString()
       }, { merge: true }).catch(err => {
         console.warn("Could not save user profile to firestore", err);
         setFirebaseError(err instanceof Error ? err.message : String(err));
@@ -336,19 +325,28 @@ export default function App() {
   // Dynamic collections streamed from Firestore with fallback to defaults
   const [dynamicShopThemes, setDynamicShopThemes] = useState<any[]>(SHOP_THEMES);
   const [dynamicClipPackages, setDynamicClipPackages] = useState<any[]>(() => [
-    { id: 'usa_100', numCoins: 100, priceString: '$1.00', region: 'USA', isHot: false },
-    { id: 'usa_500', numCoins: 500, priceString: '$4.99', region: 'USA', isHot: true },
-    { id: 'usa_1200', numCoins: 1200, priceString: '$9.99', region: 'USA', isHot: false },
-    { id: 'usa_2500', numCoins: 2500, priceString: '$19.99', region: 'USA', isHot: false },
-    { id: 'usa_5000', numCoins: 5000, priceString: '$34.99', region: 'USA', isHot: false },
-    { id: 'usa_10000', numCoins: 10000, priceString: '$59.99', region: 'USA', isHot: false },
+    { id: 'usa_pkg_1', numCoins: 100, priceString: '$0.99', region: 'USA', isHot: false, labelText: '0.99$ gpc' },
+    { id: 'usa_pkg_2', numCoins: 50, priceString: '$0.51', region: 'USA', isHot: false, labelText: '0.5$' },
+    { id: 'usa_pkg_3', numCoins: 100, priceString: '$1.01', region: 'USA', isHot: false, labelText: '1$' },
+    { id: 'usa_pkg_4', numCoins: 200, priceString: '$2.01', region: 'USA', isHot: false, labelText: '2$' },
+    { id: 'usa_pkg_5', numCoins: 300, priceString: '$3.01', region: 'USA', isHot: false, labelText: '3$' },
+    { id: 'usa_pkg_6', numCoins: 400, priceString: '$4.01', region: 'USA', isHot: false, labelText: '4$' },
+    { id: 'usa_pkg_7', numCoins: 500, priceString: '$5.01', region: 'USA', isHot: false, labelText: '5$' },
+    { id: 'usa_pkg_8', numCoins: 600, priceString: '$6.01', region: 'USA', isHot: false, labelText: '6$' },
+    { id: 'usa_pkg_9', numCoins: 1000, priceString: '$10.01', region: 'USA', isHot: false, labelText: '10$' },
+    { id: 'usa_pkg_10', numCoins: 445, priceString: '$4.45', region: 'USA', isHot: false, labelText: '90% 4$' },
+    { id: 'usa_pkg_11', numCoins: 420, priceString: '$4.20', region: 'USA', isHot: false, labelText: '95% 4$' },
+    { id: 'usa_pkg_12', numCoins: 535, priceString: '$5.34', region: 'USA', isHot: false, labelText: '75% 4$' },
+    { id: 'usa_pkg_13', numCoins: 1100, priceString: '$10.55', region: 'USA', isHot: false, labelText: '95% 10$' },
     
-    { id: 'hk_100', numCoins: 100, priceString: 'HK$8.00', region: 'HK', isHot: false },
-    { id: 'hk_500', numCoins: 500, priceString: 'HK$38.00', region: 'HK', isHot: true },
-    { id: 'hk_1200', numCoins: 1200, priceString: 'HK$78.00', region: 'HK', isHot: false },
-    { id: 'hk_2500', numCoins: 2500, priceString: 'HK$158.00', region: 'HK', isHot: false },
-    { id: 'hk_5000', numCoins: 5000, priceString: 'HK$268.00', region: 'HK', isHot: false },
-    { id: 'hk_10000', numCoins: 10000, priceString: 'HK$468.00', region: 'HK', isHot: false }
+    { id: 'hk_pkg_1', numCoins: 135, priceString: '10.10 HKD', region: 'HK', isHot: false, labelText: '10 HK$' },
+    { id: 'hk_pkg_2', numCoins: 270, priceString: '20.10 HKD', region: 'HK', isHot: false, labelText: '20 HK$' },
+    { id: 'hk_pkg_3', numCoins: 540, priceString: '40.10 HKD', region: 'HK', isHot: false, labelText: '40 HK$' },
+    { id: 'hk_pkg_4', numCoins: 675, priceString: '50.10 HKD', region: 'HK', isHot: false, labelText: '50 HK$' },
+    { id: 'hk_pkg_5', numCoins: 145, priceString: '10.60 HKD', region: 'HK', isHot: false, labelText: '95% 10 HK$' },
+    { id: 'hk_pkg_6', numCoins: 285, priceString: '20.10 HKD', region: 'HK', isHot: false, labelText: '95% 20 HK$' },
+    { id: 'hk_pkg_7', numCoins: 565, priceString: '42.10 HKD', region: 'HK', isHot: false, labelText: '95% 40 HK$' },
+    { id: 'hk_pkg_8', numCoins: 710, priceString: '52.70 HKD', region: 'HK', isHot: false, labelText: '95% 50 HK$' }
   ]);
 
   useEffect(() => {
@@ -387,11 +385,13 @@ export default function App() {
           items.push({ id: docSnap.id, ...docSnap.data() });
         });
         if (items.length > 0) {
-          // Sort packages by region then numCoins
+          // Sort packages by region then numCoins then priceString
           items.sort((a, b) => {
             const reg = (a.region || '').localeCompare(b.region || '');
             if (reg !== 0) return reg;
-            return (a.numCoins || 0) - (b.numCoins || 0);
+            const coinDiff = (a.numCoins || 0) - (b.numCoins || 0);
+            if (coinDiff !== 0) return coinDiff;
+            return (a.priceString || '').localeCompare(b.priceString || '');
           });
           setDynamicClipPackages(items);
         }
@@ -405,6 +405,70 @@ export default function App() {
 
     startThemeStream(false);
     startPackageStream(false);
+
+    // One-time check/sync for real Firestore packages to ensure the user's DB has the new list
+    const syncRealFirestorePackages = async () => {
+      const syncKey = 'neote_packages_synced_v5';
+      if (localStorage.getItem(syncKey)) {
+        return; // Already synchronized, skip to load instantly
+      }
+      try {
+        const oldIds = [
+          'usa_100', 'usa_500', 'usa_1200', 'usa_2500', 'usa_5000', 'usa_10000',
+          'hk_100', 'hk_500', 'hk_1200', 'hk_2500', 'hk_5000', 'hk_10000'
+        ];
+        
+        // Execute deletions in parallel
+        await Promise.all(
+          oldIds.map(oldId => {
+            const docRef = doc(db, 'clip_packages', oldId);
+            return deleteDoc(docRef).catch(() => {});
+          })
+        );
+
+        const newPackages = [
+          { id: 'usa_pkg_1', numCoins: 100, priceString: '$0.99', region: 'USA', isHot: false, labelText: '0.99$ gpc' },
+          { id: 'usa_pkg_2', numCoins: 50, priceString: '$0.51', region: 'USA', isHot: false, labelText: '0.5$' },
+          { id: 'usa_pkg_3', numCoins: 100, priceString: '$1.01', region: 'USA', isHot: false, labelText: '1$' },
+          { id: 'usa_pkg_4', numCoins: 200, priceString: '$2.01', region: 'USA', isHot: false, labelText: '2$' },
+          { id: 'usa_pkg_5', numCoins: 300, priceString: '$3.01', region: 'USA', isHot: false, labelText: '3$' },
+          { id: 'usa_pkg_6', numCoins: 400, priceString: '$4.01', region: 'USA', isHot: false, labelText: '4$' },
+          { id: 'usa_pkg_7', numCoins: 500, priceString: '$5.01', region: 'USA', isHot: false, labelText: '5$' },
+          { id: 'usa_pkg_8', numCoins: 600, priceString: '$6.01', region: 'USA', isHot: false, labelText: '6$' },
+          { id: 'usa_pkg_9', numCoins: 1000, priceString: '$10.01', region: 'USA', isHot: false, labelText: '10$' },
+          { id: 'usa_pkg_10', numCoins: 445, priceString: '$4.45', region: 'USA', isHot: false, labelText: '90% 4$' },
+          { id: 'usa_pkg_11', numCoins: 420, priceString: '$4.20', region: 'USA', isHot: false, labelText: '95% 4$' },
+          { id: 'usa_pkg_12', numCoins: 535, priceString: '$5.34', region: 'USA', isHot: false, labelText: '75% 4$' },
+          { id: 'usa_pkg_13', numCoins: 1100, priceString: '$10.55', region: 'USA', isHot: false, labelText: '95% 10$' },
+          
+          { id: 'hk_pkg_1', numCoins: 135, priceString: '10.10 HKD', region: 'HK', isHot: false, labelText: '10 HK$' },
+          { id: 'hk_pkg_2', numCoins: 270, priceString: '20.10 HKD', region: 'HK', isHot: false, labelText: '20 HK$' },
+          { id: 'hk_pkg_3', numCoins: 540, priceString: '40.10 HKD', region: 'HK', isHot: false, labelText: '40 HK$' },
+          { id: 'hk_pkg_4', numCoins: 675, priceString: '50.10 HKD', region: 'HK', isHot: false, labelText: '50 HK$' },
+          { id: 'hk_pkg_5', numCoins: 145, priceString: '10.60 HKD', region: 'HK', isHot: false, labelText: '95% 10 HK$' },
+          { id: 'hk_pkg_6', numCoins: 285, priceString: '20.10 HKD', region: 'HK', isHot: false, labelText: '95% 20 HK$' },
+          { id: 'hk_pkg_7', numCoins: 565, priceString: '42.10 HKD', region: 'HK', isHot: false, labelText: '95% 40 HK$' },
+          { id: 'hk_pkg_8', numCoins: 710, priceString: '52.70 HKD', region: 'HK', isHot: false, labelText: '95% 50 HK$' }
+        ];
+
+        // Execute additions in parallel
+        await Promise.all(
+          newPackages.map(pkg => {
+            const docRef = doc(db, 'clip_packages', pkg.id);
+            return setDoc(docRef, {
+              ...pkg,
+              createdAt: new Date().toISOString()
+            }, { merge: true }).catch(() => {});
+          })
+        );
+
+        localStorage.setItem(syncKey, 'true');
+      } catch (err) {
+        console.warn("Real firestore package sync ignored or failed:", err);
+      }
+    };
+
+    syncRealFirestorePackages();
 
     return () => {
       try { unsubThemes(); } catch(e){}
@@ -573,7 +637,7 @@ export default function App() {
 
           if (fetchProfileSuccess && userSnap && userSnap.exists()) {
             const data = userSnap.data();
-            const conformingId = generateUniqueIdCode(data.email || data.phone || user.email || user.phoneNumber || 'guest-user');
+            const conformingId = data.idCode || generateUniqueIdCode(data.email || data.phone || user.email || user.phoneNumber || 'guest-user');
 
             if (data.Notes && Array.isArray(data.Notes)) {
               fetchedUserNotes = data.Notes;
@@ -587,7 +651,8 @@ export default function App() {
               email: (data.email?.endsWith('@neote.app') || data.email === 'N/A') ? '' : (data.email || user.email || ''),
               country: data.country || 'Bangladesh',
               idCode: conformingId,
-              role: data.role || 'user'
+              role: data.role || 'user',
+              createdAt: data.createdAt || new Date().toISOString()
             });
 
             if (data.selectedPreset) {
@@ -670,6 +735,9 @@ export default function App() {
                 email: isPhoneUser ? '' : (user.email || userAccount.email || ''),
                 country: 'Bangladesh',
                 idCode: initialId,
+                "USER ID": initialId,
+                "User ID": initialId,
+                userId: initialId,
                 ownedThemes: ownedThemes,
                 selectedPreset: selectedPreset,
                 purchaseHistory: purchaseHistory,
@@ -1176,7 +1244,7 @@ export default function App() {
       const isPhoneUser = currentUser?.email?.endsWith('@neote.app') || (prev.phone && !prev.email);
       const emailVal = isPhoneUser ? '' : (tempProfile.email || '');
       const phoneVal = isPhoneUser ? (tempProfile.phone || '') : '';
-      const derivedId = generateUniqueIdCode(emailVal || phoneVal || prev.email || prev.phone);
+      const derivedId = prev.idCode || tempProfile.idCode || generateUniqueIdCode(emailVal || phoneVal || prev.email || prev.phone);
       return {
         ...prev,
         name: tempProfile.name,
@@ -1423,30 +1491,11 @@ export default function App() {
           <div className="space-y-2 border-t border-slate-800/80 pt-4 flex-1 flex flex-col justify-end">
             <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block">Device Theme</span>
             <div className="flex gap-2 p-1 bg-slate-900/60 rounded-xl border border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setThemeMode(ThemeMode.LIGHT);
-                  triggerNotification('Switched screen to Light Canvas Mode');
-                }}
-                className={`flex-1 py-1.5 text-[9.5px] uppercase font-bold rounded-lg transition-all text-center cursor-pointer ${
-                  themeMode === ThemeMode.LIGHT ? 'bg-[#00C087] text-slate-950 font-extrabold' : 'text-slate-400 hover:text-white'
-                }`}
+              <div
+                className="flex-1 py-1.5 text-[9.5px] uppercase font-extrabold rounded-lg text-center bg-[#00C087] text-slate-950"
               >
-                Light
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setThemeMode(ThemeMode.DARK);
-                  triggerNotification('Switched screen to Dark Canvas Mode');
-                }}
-                className={`flex-1 py-1.5 text-[9.5px] uppercase font-bold rounded-lg transition-all text-center cursor-pointer ${
-                  themeMode === ThemeMode.DARK ? 'bg-[#00C087] text-slate-950 font-extrabold' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Dark
-              </button>
+                Dark Mode Only
+              </div>
             </div>
           </div>
         </div>
@@ -1530,9 +1579,6 @@ export default function App() {
                     <p className="text-[10px] text-slate-400 leading-relaxed max-w-[240px] mx-auto">
                       This is an <span className="text-white font-black">Android-Only, Online-Only App</span>. Without an active internet connection, it cannot be opened or used.
                     </p>
-                    <p className="text-[9px] text-slate-500 leading-normal max-w-[220px] mx-auto">
-                      Please connect your device to Wi-Fi or cellular networks and try again.
-                    </p>
                   </div>
 
                   <button
@@ -1555,11 +1601,6 @@ export default function App() {
                     <RefreshCw className="w-3 h-3" />
                     <span>Try Reconnecting</span>
                   </button>
-                  
-                  <div className="absolute bottom-6 left-0 right-0">
-                    <span className="text-[8px] font-black text-slate-500 tracking-wider uppercase block mb-0.5">Android System Security</span>
-                    <span className="text-[7.5px] text-slate-600 font-mono">STATUS: ERR_INTERNET_DISCONNECTED</span>
-                  </div>
                 </div>
               ) : !isLoggedIn ? (
                 <LoginScreen 
@@ -2189,82 +2230,57 @@ export default function App() {
                     {/* 3. MID-SECTION QUICK LINKS (1/3 of vertical space, using small horizontal icons) */}
                     <div className="h-[32%] flex flex-col justify-center min-h-0">
                       <span className="text-[9px] font-bold uppercase tracking-widest opacity-60 block mb-1 text-left">Quick Links</span>
-                      <div className="grid grid-cols-4 gap-2 bg-slate-900/10 dark:bg-black/20 p-2 rounded-xl border border-slate-500/5">
+                      <div className="grid grid-cols-3 gap-2 bg-slate-900/10 dark:bg-black/20 p-2 rounded-xl border border-slate-500/5">
                         
                         {/* Facebook icon button with label below */}
                         <div className="flex flex-col items-center space-y-0.5">
                           <button
-                            onClick={() => triggerNotification('Mock Integration: Sharing notes with Facebook feed!')}
+                            onClick={() => triggerNotification('Mock Integration: Opening Facebook Quick Link!')}
                             className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 text-white cursor-pointer"
                             style={{
                               background: 'linear-gradient(135deg, #1877F2 0%, #166FE5 100%)',
                               border: themeMode === ThemeMode.LIGHT ? '2.5px solid #041E15' : '1.5px solid rgba(255, 255, 255, 0.45)',
                               boxShadow: 'inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -1.5px 2px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.2)'
                             }}
-                            title="Share on Facebook"
+                            title="Facebook"
                           >
                             <Facebook className={`w-4 h-4 fill-current stroke-none ${themeMode === ThemeMode.LIGHT ? 'p-0.5 border border-white rounded-full' : ''}`} />
                           </button>
-                          <span className="text-[8.5px] font-black opacity-80 select-none">Share</span>
+                          <span className="text-[8.5px] font-black opacity-80 select-none">Facebook</span>
                         </div>
 
-                        {/* AI Copilot icon button with label below */}
+                        {/* WhatsApp icon button with label below */}
                         <div className="flex flex-col items-center space-y-0.5">
                           <button
-                            onClick={() => triggerNotification('Mock Integration: AI Copilot Assistant Chat initialized!')}
+                            onClick={() => triggerNotification('Mock Integration: Opening WhatsApp Quick Link!')}
                             className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 text-white cursor-pointer"
                             style={{
-                              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                              background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
                               border: themeMode === ThemeMode.LIGHT ? '2.5px solid #041E15' : '1.5px solid rgba(255, 255, 255, 0.45)',
                               boxShadow: 'inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -1.5px 2px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.2)'
                             }}
-                            title="AI Copilot Chat"
+                            title="WhatsApp"
                           >
-                            <MessageSquare className={`w-4 h-4 text-white ${themeMode === ThemeMode.LIGHT ? 'p-0.5 border border-white rounded-full' : ''}`} />
+                            <MessageCircle className={`w-4 h-4 text-white fill-current ${themeMode === ThemeMode.LIGHT ? 'p-0.5 border border-white rounded-full' : ''}`} />
                           </button>
-                          <span className="text-[8.5px] font-black opacity-80 select-none">AI Chat</span>
+                          <span className="text-[8.5px] font-black opacity-80 select-none">WhatsApp</span>
                         </div>
 
-                        {/* Export/Copy Drafts button with label below */}
+                        {/* Telegram icon button with label below */}
                         <div className="flex flex-col items-center space-y-0.5">
                           <button
-                            onClick={() => {
-                              if (notes.length === 0) {
-                                triggerNotification('No notes available to export! Please add a note first.');
-                                return;
-                              }
-                              const text = notes.map(n => `[${n.title}]\n${n.content}\n`).join('\n');
-                              navigator.clipboard.writeText(text);
-                              triggerNotification('Copy success: Placed drafts onto clipboard!');
-                            }}
+                            onClick={() => triggerNotification('Mock Integration: Opening Telegram Quick Link!')}
                             className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 text-white cursor-pointer"
                             style={{
-                              background: 'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)',
+                              background: 'linear-gradient(135deg, #0088CC 0%, #0077B5 100%)',
                               border: themeMode === ThemeMode.LIGHT ? '2.5px solid #041E15' : '1.5px solid rgba(255, 255, 255, 0.45)',
                               boxShadow: 'inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -1.5px 2px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.2)'
                             }}
-                            title="Export Notes to Clipboard"
+                            title="Telegram"
                           >
-                            <Download className={`w-4 h-4 text-white ${themeMode === ThemeMode.LIGHT ? 'p-0.5 border border-white rounded-full' : ''}`} />
+                            <Send className={`w-4 h-4 text-white pl-0.5 ${themeMode === ThemeMode.LIGHT ? 'p-0.5 border border-white rounded-full' : ''}`} />
                           </button>
-                          <span className="text-[8.5px] font-black opacity-80 select-none">Copy</span>
-                        </div>
-
-                        {/* Create Shortcut icon button with label below */}
-                        <div className="flex flex-col items-center space-y-0.5">
-                          <button
-                            onClick={() => startCreating()}
-                            className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 text-white cursor-pointer"
-                            style={{
-                              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-                              border: themeMode === ThemeMode.LIGHT ? '2.5px solid #041E15' : '1.5px solid rgba(255, 255, 255, 0.45)',
-                              boxShadow: 'inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -1.5px 2px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.2)'
-                            }}
-                            title="New Note Draft"
-                          >
-                            <Plus className={`w-4 h-4 text-white ${themeMode === ThemeMode.LIGHT ? 'p-0.5 border border-white rounded-full' : ''}`} />
-                          </button>
-                          <span className="text-[8.5px] font-black opacity-80 select-none">New Draft</span>
+                          <span className="text-[8.5px] font-black opacity-80 select-none">Telegram</span>
                         </div>
 
                       </div>
@@ -2562,6 +2578,26 @@ export default function App() {
                              </div>
 
                             <div>
+                              <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">USER ID (Unchangeable)</label>
+                              <input 
+                                type="text" 
+                                value={tempProfile.idCode || ''}
+                                readOnly
+                                disabled
+                                className="w-full bg-slate-905 border border-slate-705/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-400 cursor-not-allowed outline-none select-all opacity-80 font-mono"
+                                style={{
+                                  backgroundColor: themeMode === ThemeMode.LIGHT ? '#F1F5F9' : '#070a13',
+                                  color: themeMode === ThemeMode.LIGHT ? '#64748B' : '#94A3B8',
+                                  borderColor: themeMode === ThemeMode.LIGHT ? '#E2E8F0' : '#1e293b'
+                                }}
+                                title="This ID can only be changed by an admin from the Firebase database."
+                              />
+                              <span className="text-[8px] text-slate-400 mt-1 block leading-tight">
+                                This ID is fixed. Only an administrator can modify it from the backend Firestore database.
+                              </span>
+                            </div>
+
+                            <div>
                               <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Full Name</label>
                               <input 
                                 type="text" 
@@ -2607,37 +2643,19 @@ export default function App() {
                               />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">ID Code (Unchangeable)</label>
-                                <input 
-                                  type="text" 
-                                  value={tempProfile.idCode || ''}
-                                  readOnly
-                                  disabled
-                                  className="w-full bg-slate-905 border border-slate-705/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-400 cursor-not-allowed outline-none select-all opacity-80"
-                                  style={{
-                                    backgroundColor: themeMode === ThemeMode.LIGHT ? '#F1F5F9' : '#070a13',
-                                    color: themeMode === ThemeMode.LIGHT ? '#64748B' : '#94A3B8',
-                                    borderColor: themeMode === ThemeMode.LIGHT ? '#E2E8F0' : '#1e293b'
-                                  }}
-                                  title="Your User ID is fixed and deterministic for your account credential."
-                                />
-                              </div>
-                              <div>
-                                <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Country</label>
-                                <input 
-                                  type="text" 
-                                  value={tempProfile.country || ''}
-                                  onChange={(e) => setTempProfile(p => ({ ...p, country: e.target.value }))}
-                                  className="w-full bg-slate-905 border border-slate-705/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:border-[#00C087] outline-none"
-                                  style={{
-                                    backgroundColor: themeMode === ThemeMode.LIGHT ? '#FFFFFF' : '#0B0F19',
-                                    color: themeMode === ThemeMode.LIGHT ? '#000000' : '#FFFFFF',
-                                    borderColor: themeMode === ThemeMode.LIGHT ? '#E2E8F0' : '#334155'
-                                  }}
-                                />
-                              </div>
+                            <div>
+                              <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Country</label>
+                              <input 
+                                type="text" 
+                                value={tempProfile.country || ''}
+                                onChange={(e) => setTempProfile(p => ({ ...p, country: e.target.value }))}
+                                className="w-full bg-slate-905 border border-slate-705/60 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:border-[#00C087] outline-none"
+                                style={{
+                                  backgroundColor: themeMode === ThemeMode.LIGHT ? '#FFFFFF' : '#0B0F19',
+                                  color: themeMode === ThemeMode.LIGHT ? '#000000' : '#FFFFFF',
+                                  borderColor: themeMode === ThemeMode.LIGHT ? '#E2E8F0' : '#334155'
+                                }}
+                              />
                             </div>
                           </div>
                         </div>
@@ -2671,6 +2689,7 @@ export default function App() {
                         {/* 2. Visual Grid Cards matching exactly the spreadsheet */}
                         <div className="space-y-2">
                           {[
+                            { label: 'USER ID', value: userAccount.idCode || '', icon: Lock, isUserId: true },
                             { label: 'Full Name', value: userAccount.name || '', icon: User },
                             { label: 'Phone', value: (userAccount.phone === 'N/A' ? '' : (userAccount.phone || '')), icon: Phone },
                             { label: 'Email', value: (userAccount.email === 'N/A' ? '' : (userAccount.email || '')), icon: Mail },
@@ -2686,10 +2705,10 @@ export default function App() {
                                     : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-900/60'
                                 }`}
                               >
-                                <div className="flex items-center space-x-3.5">
+                                <div className="flex items-center space-x-3.5 w-full">
                                   {/* Circular custom colored icon holder */}
                                   <div 
-                                    className="w-8.5 h-8.5 rounded-full flex items-center justify-center border transition-all"
+                                    className="w-8.5 h-8.5 rounded-full flex items-center justify-center border transition-all shrink-0"
                                     style={{
                                       backgroundColor: themeMode === ThemeMode.LIGHT 
                                         ? `${selectedPreset.primaryColorHex}15`
@@ -2701,11 +2720,13 @@ export default function App() {
                                     <IconC className="w-4 h-4 stroke-[2]" />
                                   </div>
 
-                                  <div>
+                                  <div className="flex-1 min-w-0">
                                     <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider leading-none mb-0.5">
                                       {field.label}
                                     </span>
-                                    <span className={`text-[12px] font-bold tracking-tight block ${
+                                    <span className={`text-[12px] font-bold tracking-tight block truncate ${
+                                      field.isUserId ? 'font-mono text-slate-400' : ''
+                                    } ${
                                       themeMode === ThemeMode.LIGHT ? 'text-slate-800' : 'text-slate-100'
                                     }`}>
                                       {field.value}
@@ -3751,15 +3772,47 @@ service cloud.firestore {
                             }}
                             className="text-[9px] font-bold mt-0.5 text-white/70"
                           >
-                            Joined: 01 Apr 2026
+                            Joined: {(() => {
+                              if (!userAccount.createdAt) return '01 Apr 2026';
+                              try {
+                                const d = new Date(userAccount.createdAt);
+                                if (isNaN(d.getTime())) return '01 Apr 2026';
+                                return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                              } catch (e) {
+                                return '01 Apr 2026';
+                              }
+                            })()}
                           </motion.p>
 
                           {/* 4. Copyable Info Cards Container */}
                           <div className="w-full mt-3 space-y-1.5 max-w-[240px]">
-                            {/* Phone number */}
+                            {/* USER ID */}
                             <motion.div 
                               variants={{
                                 hidden: { x: -15, opacity: 0 },
+                                show: { x: 0, opacity: 1 }
+                              }}
+                              className="backdrop-blur-md bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-left text-white shadow-sm"
+                            >
+                              <div>
+                                <span className="text-[10px] block font-bold uppercase tracking-wider text-white/50 mb-0.5">USER ID:</span>
+                                <span className="text-xs font-mono font-bold tracking-wide text-white">{userAccount.idCode || '#UNKNOWN'}</span>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(userAccount.idCode || '#UNKNOWN');
+                                  triggerNotification('User ID copied to clipboard!');
+                                }}
+                                className="p-1 rounded transition-colors cursor-pointer bg-white/5 hover:bg-white/15 text-white"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </motion.div>
+
+                            {/* Phone number */}
+                            <motion.div 
+                              variants={{
+                                hidden: { x: 15, opacity: 0 },
                                 show: { x: 0, opacity: 1 }
                               }}
                               className="backdrop-blur-md bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-left text-white shadow-sm"
@@ -3772,29 +3825,6 @@ service cloud.firestore {
                                 onClick={() => {
                                   navigator.clipboard.writeText(userAccount.phone || '01XXXXXXXXX');
                                   triggerNotification('Phone number copied to clipboard!');
-                                }}
-                                className="p-1 rounded transition-colors cursor-pointer bg-white/5 hover:bg-white/15 text-white"
-                              >
-                                <Copy className="w-3 h-3" />
-                              </button>
-                            </motion.div>
-
-                            {/* USER ID */}
-                            <motion.div 
-                              variants={{
-                                hidden: { x: 15, opacity: 0 },
-                                show: { x: 0, opacity: 1 }
-                              }}
-                              className="backdrop-blur-md bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-left text-white shadow-sm"
-                            >
-                              <div>
-                                <span className="text-[10px] block font-bold uppercase tracking-wider text-white/50">USER ID:</span>
-                                <span className="text-xs font-mono font-bold tracking-wide text-white">{userAccount.idCode || '#UNKNOWN'}</span>
-                              </div>
-                              <button 
-                                onClick={() => {
-                                  navigator.clipboard.writeText(userAccount.idCode || '#UNKNOWN');
-                                  triggerNotification('User ID copied to clipboard!');
                                 }}
                                 className="p-1 rounded transition-colors cursor-pointer bg-white/5 hover:bg-white/15 text-white"
                               >
@@ -4104,7 +4134,13 @@ service cloud.firestore {
                           {dynamicClipPackages.filter(p => (p.region || 'USA') === buyClipRegion).map((plan, ridx) => (
                             <div 
                               key={plan.id || ridx}
-                              onClick={() => setSelectedPlanId(plan.id)}
+                              onClick={() => {
+                                if (selectedPlanId === plan.id) {
+                                  setSelectedPlanId(null);
+                                } else {
+                                  setSelectedPlanId(plan.id);
+                                }
+                              }}
                               className={`p-4 pt-5 pb-4 min-h-[165px] rounded-xl border transition-all flex flex-col items-center justify-between text-center relative overflow-hidden group/plan cursor-pointer ${
                                 themeMode === ThemeMode.LIGHT 
                                   ? (selectedPlanId === plan.id ? 'bg-white' : 'bg-[#F8FAFC] hover:bg-white border-slate-200 shadow-2xs') 
@@ -4132,6 +4168,18 @@ service cloud.firestore {
                                   </div>
                                 </div>
                               )}
+
+                              {selectedPlanId === plan.id && (
+                                <span 
+                                  className="absolute top-2 left-0 right-0 mx-auto w-max whitespace-nowrap text-[8px] font-black tracking-wide px-2 py-0.5 rounded-full shadow-lg border border-transparent animate-bounce z-20 font-sans"
+                                  style={{
+                                    backgroundColor: selectedPreset.primaryColorHex,
+                                    color: '#000000',
+                                  }}
+                                >
+                                  {plan.labelText || 'PROMO'}
+                                </span>
+                              )}
                               
                               <div 
                                 className="w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-all group-hover/plan:scale-110 relative shrink-0"
@@ -4141,18 +4189,6 @@ service cloud.firestore {
                                 }}
                               >
                                 <PremiumPaperclipIcon className="w-5 h-5" glowColor={selectedPreset.primaryColorHex} />
-                                
-                                {selectedPlanId === plan.id && (
-                                  <span 
-                                    className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] font-black tracking-wide px-2 py-0.5 rounded-full shadow-lg border border-transparent animate-bounce z-10 font-sans"
-                                    style={{
-                                      backgroundColor: selectedPreset.primaryColorHex,
-                                      color: '#000000',
-                                    }}
-                                  >
-                                    {plan.labelText || '( 4$ 95%)'}
-                                  </span>
-                                )}
                               </div>
 
                               <span className="text-base font-black tracking-tight block">

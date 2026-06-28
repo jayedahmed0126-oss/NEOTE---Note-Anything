@@ -85,11 +85,11 @@ export default function SplashScreen({ onComplete, primaryColor, durationMs, isT
 
             {/* 2. Inner Notepad Pad Container */}
             <motion.rect 
-              x="28" 
-              y="28" 
-              width="44" 
-              height="44" 
-              rx="8" 
+              x="29" 
+              y="29" 
+              width="42" 
+              height="42" 
+              rx="10" 
               stroke={primaryColor} 
               strokeWidth="2" 
               strokeLinecap="round"
@@ -103,7 +103,7 @@ export default function SplashScreen({ onComplete, primaryColor, durationMs, isT
             <motion.line 
               x1="38" 
               y1="41" 
-              x2="55" 
+              x2="57" 
               y2="41" 
               stroke={primaryColor} 
               strokeWidth="2.2" 
@@ -115,7 +115,7 @@ export default function SplashScreen({ onComplete, primaryColor, durationMs, isT
             <motion.line 
               x1="38" 
               y1="47" 
-              x2="51" 
+              x2="55" 
               y2="47" 
               stroke={primaryColor} 
               strokeWidth="2.2" 
@@ -127,7 +127,7 @@ export default function SplashScreen({ onComplete, primaryColor, durationMs, isT
             <motion.line 
               x1="38" 
               y1="53" 
-              x2="47" 
+              x2="50" 
               y2="53" 
               stroke={primaryColor} 
               strokeWidth="2.2" 
@@ -139,7 +139,7 @@ export default function SplashScreen({ onComplete, primaryColor, durationMs, isT
 
             {/* 4. Handwriting Scribble design representing "Note Anything" */}
             <motion.path 
-              d="M 38 60 Q 43 59 47 62 T 53 60" 
+              d="M 38 59 Q 43 56 47 60 T 54 58" 
               stroke={primaryColor} 
               strokeWidth="1.8" 
               strokeLinecap="round" 
@@ -150,18 +150,50 @@ export default function SplashScreen({ onComplete, primaryColor, durationMs, isT
 
             {/* 5. Animated signature Pencil Tool writing notes */}
             <motion.g 
-              initial={{ opacity: 0, x: 15, y: -15, rotate: -30 }}
-              animate={{ opacity: [0, 1, 1], x: [15, 10, -5], y: [-15, -12, 10], rotate: [-30, 0, 18] }}
+              initial={{ opacity: 0, x: 12, y: -12, rotate: -15 }}
+              animate={{ opacity: 1, x: 0, y: 0, rotate: 0 }}
               transition={{ delay: 0.4 * speedRatio, duration: 0.8 * speedRatio, ease: "easeInOut" }}
             >
               {/* Pencil tip pointing near bottom-right of workspace */}
-              <g transform="translate(49, 31)">
-                {/* Pencil Cone wood tip */}
-                <path d="M 6 12 L 8 16 L 10 12 Z" fill={primaryColor} />
-                {/* Pencil lead body structure */}
-                <rect x="6" y="2" width="4" height="10" rx="0.5" fill="none" stroke={primaryColor} strokeWidth="1.5" />
-                {/* Pencil top eraser tip */}
-                <rect x="6.5" y="0.5" width="3" height="1.5" fill={primaryColor} />
+              <g transform="translate(54, 58) rotate(28)">
+                {/* Pencil body outline */}
+                <path 
+                  d="M -2.5 -5 L -2.5 -22 C -2.5 -24 2.5 -24 2.5 -22 L 2.5 -5" 
+                  stroke={primaryColor} 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  fill="none" 
+                />
+                {/* Pencil cone wood tip */}
+                <path 
+                  d="M -2.5 -5 L 0 0 L 2.5 -5 Z" 
+                  stroke={primaryColor} 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  fill="none" 
+                />
+                {/* Lead divider line */}
+                <line 
+                  x1="-1" 
+                  y1="-2" 
+                  x2="1" 
+                  y2="-2" 
+                  stroke={primaryColor} 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                />
+                {/* Pencil eraser band */}
+                <line 
+                  x1="-2.5" 
+                  y1="-18" 
+                  x2="2.5" 
+                  y2="-18" 
+                  stroke={primaryColor} 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                />
               </g>
             </motion.g>
           </svg>
