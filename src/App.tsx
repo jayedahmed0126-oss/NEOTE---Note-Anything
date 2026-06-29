@@ -231,26 +231,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('user_account_profile', JSON.stringify(userAccount));
-    if (currentUser && hasInitialProfileLoaded) {
-      setDoc(doc(db, 'users', currentUser.uid), {
-        name: userAccount.name,
-        avatarUrl: userAccount.avatarUrl || '',
-        premiumCoins: userAccount.premiumCoins,
-        phone: userAccount.phone || '',
-        email: userAccount.email || '',
-        country: userAccount.country || '',
-        idCode: userAccount.idCode || '',
-        "USER ID": userAccount.idCode || '',
-        "User ID": userAccount.idCode || '',
-        userId: userAccount.idCode || '',
-        role: userAccount.role || 'user',
-        createdAt: userAccount.createdAt || new Date().toISOString()
-      }, { merge: true }).catch(err => {
-        console.warn("Could not save user profile to firestore", err);
-        setFirebaseError(err instanceof Error ? err.message : String(err));
-      });
-    }
-  }, [userAccount, currentUser, hasInitialProfileLoaded]);
+  }, [userAccount]);
 
   // Selected preset colors
   const [selectedPreset, setSelectedPreset] = useState<FlutterCodePreset>(() => {
@@ -268,15 +249,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('neote_selected_preset', JSON.stringify(selectedPreset));
-    if (currentUser && hasInitialProfileLoaded) {
-      setDoc(doc(db, 'users', currentUser.uid), {
-        selectedPreset: selectedPreset
-      }, { merge: true }).catch(err => {
-        console.warn("Could not save selected preset to firestore", err);
-        setFirebaseError(err instanceof Error ? err.message : String(err));
-      });
-    }
-  }, [selectedPreset, currentUser, hasInitialProfileLoaded]);
+  }, [selectedPreset]);
 
   // Owned color themes for purchase as requested
   const [ownedThemes, setOwnedThemes] = useState<string[]>(() => {
@@ -298,15 +271,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('neote_owned_themes', JSON.stringify(ownedThemes));
-    if (currentUser && hasInitialProfileLoaded) {
-      setDoc(doc(db, 'users', currentUser.uid), {
-        ownedThemes: ownedThemes
-      }, { merge: true }).catch(err => {
-        console.warn("Could not save owned themes to firestore", err);
-        setFirebaseError(err instanceof Error ? err.message : String(err));
-      });
-    }
-  }, [ownedThemes, currentUser, hasInitialProfileLoaded]);
+  }, [ownedThemes]);
 
   // Notes data (persisted in localStorage)
   const [notes, setNotes] = useState<Note[]>([]);
@@ -499,14 +464,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('purchase_history_v2', JSON.stringify(purchaseHistory));
-    if (currentUser && hasInitialProfileLoaded) {
-      setDoc(doc(db, 'users', currentUser.uid), {
-        purchaseHistory: purchaseHistory
-      }, { merge: true }).catch(err => {
-        console.warn("Could not save purchase history to firestore", err);
-      });
-    }
-  }, [purchaseHistory, currentUser, hasInitialProfileLoaded]);
+  }, [purchaseHistory]);
 
   const [currentDeviceId] = useState<string>(() => {
     let id = localStorage.getItem('neote_device_id_v1');
@@ -574,14 +532,47 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('neote_device_sessions', JSON.stringify(deviceSessions));
-    if (currentUser && hasInitialProfileLoaded) {
+  }, [deviceSessions]);
+
+  // Consolidated and Debounced Firestore Sync to avoid multiple overlapping writes
+  // and guarantee smooth, lag-free performance during state updates & tab switching.
+  useEffect(() => {
+    if (!currentUser || !hasInitialProfileLoaded) return;
+
+    const delayDebounceId = setTimeout(() => {
       setDoc(doc(db, 'users', currentUser.uid), {
+        name: userAccount.name,
+        avatarUrl: userAccount.avatarUrl || '',
+        premiumCoins: userAccount.premiumCoins,
+        phone: userAccount.phone || '',
+        email: userAccount.email || '',
+        country: userAccount.country || '',
+        idCode: userAccount.idCode || '',
+        "USER ID": userAccount.idCode || '',
+        "User ID": userAccount.idCode || '',
+        userId: userAccount.idCode || '',
+        role: userAccount.role || 'user',
+        createdAt: userAccount.createdAt || new Date().toISOString(),
+        selectedPreset: selectedPreset,
+        ownedThemes: ownedThemes,
+        purchaseHistory: purchaseHistory,
         deviceSessions: deviceSessions
       }, { merge: true }).catch(err => {
-        console.warn("Could not save device sessions to firestore", err);
+        console.warn("Could not save unified user profile to firestore", err);
+        setFirebaseError(err instanceof Error ? err.message : String(err));
       });
-    }
-  }, [deviceSessions, currentUser, hasInitialProfileLoaded]);
+    }, 1000); // 1-second debounce is perfect to batched updates
+
+    return () => clearTimeout(delayDebounceId);
+  }, [
+    userAccount,
+    selectedPreset,
+    ownedThemes,
+    purchaseHistory,
+    deviceSessions,
+    currentUser,
+    hasInitialProfileLoaded
+  ]);
 
   // Active navigation tab *inside* the phone emulator (Default is Home / 0)
   const [activeTab, setActiveTab] = useState<number>(0); 
@@ -1366,8 +1357,13 @@ export default function App() {
 
   return (
     <div 
-      style={dynamicStyles}
-      className="min-h-screen bg-black text-slate-100 font-sans flex flex-col selection:bg-[#00C087]/30 selection:text-[#00C087]"
+      style={{
+        ...dynamicStyles,
+        backgroundColor: themeMode === ThemeMode.DARK ? selectedPreset.darkBgColorHex : selectedPreset.lightBgColorHex,
+        color: themeMode === ThemeMode.DARK ? '#F1F5F9' : '#0F172A',
+        fontFamily: 'Inter, sans-serif'
+      }}
+      className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden relative select-none bg-slate-950 text-slate-100 font-sans selection:bg-[#00C087]/30"
     >
       <style>{`
         /* Dynamic Theme Variable Style Overrides */
@@ -1398,159 +1394,7 @@ export default function App() {
         span.bg-emerald-500\\/15 { background-color: var(--dynamic-primary-15) !important; color: var(--dynamic-primary) !important; }
       `}</style>
       
-      {/* CORE DESKTOP LAYOUT (Full Screen & Personalization Sidebar) */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-8 flex flex-col lg:flex-row items-stretch gap-8 relative">
-        
-        {/* LEFT COLUMN: BRANDING & PERSONALIZATION CENTER */}
-        <div className="w-full lg:w-72 flex flex-col bg-slate-950/60 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-5 flex-none font-sans text-left">
-          <div className="space-y-1">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-[#00C087]" /> Customize Style
-            </h3>
-            <p className="text-[11px] text-slate-400">Dynamically load colors and adjust typography themes in real-time.</p>
-          </div>
-
-          {/* PALETTE BUTTONS */}
-          <div className="space-y-2 border-t border-slate-800/80 pt-4">
-            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block">Branding Palettes</span>
-            <div className="grid grid-cols-2 gap-2">
-              {COLOR_PRESETS.map((preset, idx) => {
-                const isSelected = selectedPreset.primaryColorHex === preset.primary;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => applyPresetColors(preset)}
-                    className="flex flex-col items-center p-2 rounded-xl border transition-all hover:scale-102 active:scale-98 cursor-pointer text-center"
-                    style={{
-                      borderColor: isSelected ? selectedPreset.primaryColorHex : '#1E293B',
-                      backgroundColor: isSelected ? `${selectedPreset.primaryColorHex}10` : 'transparent'
-                    }}
-                  >
-                    <div className="flex h-4 w-10 rounded-full overflow-hidden border border-slate-800 mb-1.5 shrink-0">
-                      <div className="w-1/2" style={{ backgroundColor: preset.primary }}></div>
-                      <div className="w-1/2" style={{ backgroundColor: preset.accent }}></div>
-                    </div>
-                    <span className="text-[9.5px] font-black text-slate-300 tracking-tight whitespace-nowrap">{preset.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* HEX COLOR INPUT EDITORS */}
-          <div className="space-y-3.5 border-t border-slate-800/80 pt-4">
-            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block">Precise Adjustments</span>
-            
-            <div className="space-y-2.5">
-              <div>
-                <label className="text-[9.5px] text-slate-400 font-bold block mb-1">Primary Color (HEX):</label>
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="color" 
-                    value={selectedPreset.primaryColorHex}
-                    onChange={(e) => setSelectedPreset(prev => ({ ...prev, primaryColorHex: e.target.value }))}
-                    className="w-7 h-7 bg-transparent border-0 cursor-pointer rounded"
-                  />
-                  <input 
-                    type="text" 
-                    value={selectedPreset.primaryColorHex}
-                    onChange={(e) => setSelectedPreset(prev => ({ ...prev, primaryColorHex: e.target.value }))}
-                    className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono w-24 text-slate-300 focus:outline-none focus:border-current"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[9.5px] text-slate-400 font-bold block mb-1">Accent Highlight (HEX):</label>
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="color" 
-                    value={selectedPreset.accentColorHex}
-                    onChange={(e) => setSelectedPreset(prev => ({ ...prev, accentColorHex: e.target.value }))}
-                    className="w-7 h-7 bg-transparent border-0 cursor-pointer rounded"
-                  />
-                  <input 
-                    type="text" 
-                    value={selectedPreset.accentColorHex}
-                    onChange={(e) => setSelectedPreset(prev => ({ ...prev, accentColorHex: e.target.value }))}
-                    className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono w-24 text-slate-300 focus:outline-none focus:border-current"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* NETWORK SIMULATOR */}
-          <div className="space-y-2 border-t border-slate-800/80 pt-4">
-            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block flex items-center justify-between">
-              <span>Network State</span>
-              <span className={`text-[8px] font-mono px-1 py-0.5 rounded ${isCurrentlyOnline ? 'bg-emerald-950 text-emerald-400 font-bold' : 'bg-red-950 text-red-400 font-bold animate-pulse'}`}>
-                {isCurrentlyOnline ? 'ONLINE' : 'OFFLINE'}
-              </span>
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setSimulatedOffline(prev => {
-                  const newVal = !prev;
-                  triggerNotification(newVal ? 'Simulated device going offline!' : 'Restored network connection!');
-                  return newVal;
-                });
-              }}
-              className={`w-full py-2 text-[9.5px] uppercase font-black rounded-lg transition-all text-center cursor-pointer flex items-center justify-center space-x-1.5 border ${
-                simulatedOffline 
-                  ? 'bg-red-950/40 border-red-900 text-red-400 hover:bg-red-900/25' 
-                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850'
-              }`}
-            >
-              {simulatedOffline ? <WifiOff className="w-3.5 h-3.5" /> : <Wifi className="w-3.5 h-3.5" />}
-              <span>{simulatedOffline ? 'Simulate Offline' : 'Disconnect (Simulate)'}</span>
-            </button>
-            <p className="text-[9px] text-slate-500 italic text-center leading-normal">
-              * Tests the Play Store online-only blocking screen.
-            </p>
-          </div>
-
-          {/* APPEARANCE MODE SWITCHER */}
-          <div className="space-y-2 border-t border-slate-800/80 pt-4 flex-1 flex flex-col justify-end">
-            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wide block">Device Theme</span>
-            <div className="flex gap-2 p-1 bg-slate-900/60 rounded-xl border border-slate-800">
-              <div
-                className="flex-1 py-1.5 text-[9.5px] uppercase font-extrabold rounded-lg text-center bg-[#00C087] text-slate-950"
-              >
-                Dark Mode Only
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: GORGEOUS PHYSICAL ANDROID HANDSET EMULATOR */}
-        <div className="flex-1 flex justify-center items-center py-2 md:py-4 bg-slate-900/10 rounded-[36px] border border-slate-800/40 p-2 md:p-6 shadow-inner min-h-[700px]">
-          <div className="relative w-full max-w-[385px] transition-all duration-300">
-            {/* Matte dark real Android phone frame feel */}
-            <div className="relative mx-auto rounded-[46px] bg-[#0A0F1D] p-3.5 border-[10px] border-slate-950 shadow-2xl shadow-indigo-950/40 ring-1 ring-slate-800/80 group">
-              
-              {/* Ear-piece speaker speaker notch */}
-              <div className="absolute top-1 left-1/2 -translate-x-1/2 w-28 h-5.5 bg-slate-950 rounded-b-xl z-30 flex items-center justify-center">
-                <div className="w-10 h-0.5 bg-slate-800 rounded-full mb-0.5"></div>
-                <div className="w-2 h-2 bg-[#090D16] rounded-full absolute right-5 top-1.5 border border-slate-800/30"></div>
-              </div>
-
-              {/* Side buttons */}
-              <div className="absolute right-[-11.5px] top-24 w-[3.5px] h-10 bg-slate-800 rounded-r border-r border-slate-705/40 shadow"></div>
-              <div className="absolute right-[-11.5px] top-38 w-[3.5px] h-16 bg-slate-800 rounded-r border-r border-slate-705/40 shadow"></div>
-
-              {/* Interactive AMOLED Phone screen frame */}
-              <div 
-                style={{
-                  backgroundColor: themeMode === ThemeMode.DARK ? selectedPreset.darkBgColorHex : selectedPreset.lightBgColorHex,
-                  color: themeMode === ThemeMode.DARK ? '#F1F5F9' : '#0F172A',
-                  fontFamily: 'Inter, sans-serif'
-                }}
-                className="w-full overflow-hidden flex flex-col relative z-20 shadow-inner select-none transition-all duration-300 rounded-[32px] aspect-[9/19.2] bg-transparent"
-              >
-          <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait">
             {showGlobalSplash && (
                   <motion.div
                     key="splash"
@@ -2904,7 +2748,6 @@ export default function App() {
                   <button 
                     onClick={() => {
                       logTabChangeWithDirection(0);
-                      triggerNotification('Toggled: Home Screen Notes Area');
                     }}
                     className="flex-1 flex items-center justify-center py-3 px-4 rounded-full transition-all duration-300 mx-1 cursor-pointer hover:scale-105 active:scale-95"
                     style={{
@@ -2922,7 +2765,6 @@ export default function App() {
                   <button 
                     onClick={() => {
                       logTabChangeWithDirection(1);
-                      triggerNotification('Toggled: Shop Screen Window');
                     }}
                     className="flex-1 flex items-center justify-center py-3 px-4 rounded-full transition-all duration-300 mx-1 cursor-pointer hover:scale-105 active:scale-95"
                     style={{
@@ -2940,7 +2782,6 @@ export default function App() {
                   <button 
                     onClick={() => {
                       logTabChangeWithDirection(2);
-                      triggerNotification('Toggled: Quick Config / Settings Window');
                     }}
                     className="flex-1 flex items-center justify-center py-3 px-4 rounded-full transition-all duration-300 mx-1 cursor-pointer hover:scale-105 active:scale-95"
                     style={{
@@ -2963,8 +2804,8 @@ export default function App() {
               {noteIdToDelete && (() => {
                 const noteToDelete = notes.find(n => n.id === noteIdToDelete);
                 return (
-                  <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-[280px] shadow-2xl text-center">
+                  <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-[280px] shadow-2xl text-center animate-slide-in">
                       <div className="w-12 h-12 bg-red-500/10 border border-red-500/25 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Trash2 className="w-6 h-6 stroke-[2]" />
                       </div>
@@ -2997,8 +2838,8 @@ export default function App() {
 
               {/* CHANGE PASSWORD EMULATOR INTERNAL POP-UP */}
               {isChangePasswordOpen && (
-                <div className="absolute inset-0 bg-slate-955/85 backdrop-blur-md z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(10, 15, 30, 0.9)' }}>
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-[280px] shadow-2xl text-left">
+                <div className="absolute inset-0 bg-slate-955/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(10, 15, 30, 0.9)' }}>
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-[280px] shadow-2xl text-left animate-slide-in">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3 animate-pulse" style={{ backgroundColor: `${selectedPreset.primaryColorHex}18`, color: selectedPreset.primaryColorHex }}>
                       <Lock className="w-5 h-5 stroke-[2]" />
                     </div>
@@ -3100,8 +2941,8 @@ export default function App() {
 
               {/* DELETE ACCOUNT EMULATOR INTERNAL POP-UP */}
               {isDeleteAccountOpen && (
-                <div className="absolute inset-0 bg-red-955/85 backdrop-blur-md z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(15, 3, 3, 0.95)' }}>
-                  <div className="bg-slate-900 border border-red-900/40 rounded-2xl p-5 w-full max-w-[280px] shadow-2xl text-center">
+                <div className="absolute inset-0 bg-red-955/85 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in" style={{ backgroundColor: 'rgba(15, 3, 3, 0.95)' }}>
+                  <div className="bg-slate-900 border border-red-900/40 rounded-2xl p-5 w-full max-w-[280px] shadow-2xl text-center animate-slide-in">
                     <div className="w-12 h-12 bg-red-500/10 border border-red-500/25 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Trash2 className="w-6 h-6 stroke-[2]" />
                     </div>
@@ -3196,8 +3037,8 @@ export default function App() {
 
               {/* SECURE DEVICES LOG POP-UP */}
               {isDevicesOpen && (
-                <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 w-full max-w-[310px] shadow-2xl text-left flex flex-col max-h-[90%] overflow-hidden">
+                <div className="absolute inset-0 bg-slate-955/85 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 w-full max-w-[310px] shadow-2xl text-left flex flex-col max-h-[90%] overflow-hidden animate-slide-in">
                     <div className="flex justify-between items-center mb-3">
                       <div>
                         <h4 className="text-sm font-black text-white">Active Sessions</h4>
@@ -3268,80 +3109,10 @@ export default function App() {
                                   <div><span className="font-bold text-red-400/80">Log Out:</span> {session.logoutTime}</div>
                                 )}
                               </div>
-                              
-                              {!isCurrent && session.status === 'online' && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setDeviceSessions(prev => prev.map(dev => {
-                                      if (dev.id === session.id) {
-                                        return {
-                                          ...dev,
-                                          status: 'offline',
-                                          logoutTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', Today'
-                                        };
-                                      }
-                                      return dev;
-                                    }));
-                                    triggerNotification(`Remotely logged out of ${session.name}!`);
-                                  }}
-                                  className="px-2 py-0.5 bg-red-950/50 border border-red-900/40 text-red-400 font-extrabold text-[9px] uppercase tracking-wide rounded hover:bg-red-900/30 transition-all active:scale-95"
-                                >
-                                  Log Out
-                                </button>
-                              )}
                             </div>
                           </div>
                         );
                       })}
-                    </div>
-
-                    {/* Quick Simulation Union Button */}
-                    <div className="mt-3 pt-2.5 border-t border-slate-800 flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const models = ['iPad Air Pro', 'Samsung S24 Ultra', 'Google Pixel 8', 'Firefox Linux Desktop'];
-                          const types: ('mobile' | 'desktop' | 'tablet')[] = ['tablet', 'mobile', 'mobile', 'desktop'];
-                          const randIdx = Math.floor(Math.random() * models.length);
-                          
-                          const targetName = models[randIdx];
-                          const targetType = types[randIdx];
-
-                          const newSession: DeviceSession = {
-                            id: `dev-${Date.now()}`,
-                            name: targetName,
-                            type: targetType,
-                            status: 'online',
-                            loginTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', Today',
-                            location: 'Chittagong, BD (IP: 103.145.23.' + Math.floor(Math.random() * 254) + ')'
-                          };
-                          
-                          setDeviceSessions(prev => {
-                            // Enforce 1 session per device - check if this simulated device exists
-                            const existingIndex = prev.findIndex(s => s.name === targetName && s.type === targetType);
-                            if (existingIndex !== -1) {
-                              const updated = [...prev];
-                              updated[existingIndex] = {
-                                ...updated[existingIndex],
-                                status: 'online',
-                                loginTime: newSession.loginTime,
-                                location: newSession.location
-                              };
-                              return updated;
-                            } else {
-                              return [newSession, ...prev];
-                            }
-                          });
-                          triggerNotification(`Simulated login for ${targetName}!`);
-                        }}
-                        className="w-full py-1.5 rounded-lg text-slate-100 font-bold text-[9px] uppercase tracking-wider text-center transition-all bg-gradient-to-r hover:opacity-90 active:scale-97 border border-slate-700/60"
-                        style={{
-                          background: `linear-gradient(135deg, ${selectedPreset.primaryColorHex}D0 0%, ${selectedPreset.accentColorHex}A0 100%)`
-                        }}
-                      >
-                        + Simulate Login on New Device
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -3349,8 +3120,8 @@ export default function App() {
 
               {/* ADMIN PASSWORD VERIFICATION MODAL */}
               {isAdminPasswordModalOpen && (
-                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-xs shadow-2xl flex flex-col relative overflow-hidden">
+                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-xs shadow-2xl flex flex-col relative overflow-hidden animate-slide-in">
                     
                     {/* Header */}
                     <div className="flex justify-between items-center mb-5 shrink-0">
@@ -3451,182 +3222,178 @@ export default function App() {
 
               {/* PRIVACY POLICY MODAL */}
               {isPrivacyModalOpen && (
-                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[85%] overflow-hidden relative">
-                    
-                    {/* Header */}
-                    <div className="flex justify-between items-center mb-4 shrink-0">
-                      <div className="flex items-center space-x-2">
-                        <span className="p-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                          <Shield className="w-3.5 h-3.5" />
-                        </span>
-                        <h4 className="text-xs font-black text-white uppercase tracking-wider">Privacy Policy</h4>
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setIsPrivacyModalOpen(false);
-                        }}
-                        className="text-[10px] font-mono px-2 py-0.5 border border-slate-700 bg-slate-950/40 hover:bg-slate-800 text-slate-300 rounded uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
-                      >
-                        [close]
-                      </button>
+                <div className="absolute inset-0 bg-slate-900 z-[100] flex flex-col p-6 animate-fadeIn">
+                  
+                  {/* Header */}
+                  <div className="flex justify-between items-center mb-5 shrink-0 border-b border-slate-800 pb-3.5">
+                    <div className="flex items-center space-x-2">
+                      <span className="p-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                        <Shield className="w-3.5 h-3.5" />
+                      </span>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">Privacy Policy</h4>
                     </div>
-
-                    <div className="flex-1 overflow-y-auto pr-1 text-slate-300 space-y-4 text-left font-sans text-xs">
-                      <h2 className="text-sm font-black text-white border-b border-slate-800 pb-1 uppercase tracking-wide">
-                        PRIVACY POLICY
-                      </h2>
-                      <p className="text-[10px] text-slate-500 italic">Effective Date: June 29, 2026</p>
-                      
-                      <p className="leading-relaxed text-slate-300">
-                        Welcome to NEOTE ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.
-                      </p>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          Information We Collect
-                        </h3>
-                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
-                          <li>
-                            <strong className="text-slate-100">User Content:</strong> We store the notes, texts, and media you create within the app. Depending on your settings, these are stored locally on your device or synced via secure cloud servers.
-                          </li>
-                          <li>
-                            <strong className="text-slate-100">In-App Purchases:</strong> We do not collect or store your payment card details. All financial transactions are processed securely by third-party services (such as Google Play Billing or Apple App Store). They provide us only with transaction confirmations.
-                          </li>
-                          <li>
-                            <strong className="text-slate-100">Device Information:</strong> We may collect basic diagnostic data, such as device type, OS version, and crash logs, to improve app performance.
-                          </li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          How We Use Your Information
-                        </h3>
-                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
-                          <li>To provide, maintain, and improve the features of NEOTE.</li>
-                          <li>To process your in-app purchases and subscriptions.</li>
-                          <li>To troubleshoot bugs and protect against security fraud.</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          Data Security & Sharing
-                        </h3>
-                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
-                          <li>Your data is yours. We do not sell your personal information or note contents to third parties.</li>
-                          <li>We use industry-standard encryption to protect your synced data.</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          Your Rights
-                        </h3>
-                        <p className="leading-relaxed">
-                          You can delete your account or clear your data at any time directly through the app settings.
-                        </p>
-                      </div>
-                    </div>
-
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setIsPrivacyModalOpen(false);
+                      }}
+                      className="text-[10px] font-mono px-2.5 py-1.5 border border-slate-700 bg-slate-950/40 hover:bg-slate-800 text-slate-300 rounded-xl uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
+                    >
+                      [close]
+                    </button>
                   </div>
+
+                  <div className="flex-1 overflow-y-auto liquid-bubble-scroll text-slate-300 space-y-5 text-left font-sans text-xs pb-10">
+                    <h2 className="text-sm font-black text-white border-b border-slate-800 pb-1 uppercase tracking-wide">
+                      PRIVACY POLICY
+                    </h2>
+                    <p className="text-[10px] text-slate-500 italic">Effective Date: June 29, 2026</p>
+                    
+                    <p className="leading-relaxed text-slate-300">
+                      Welcome to NEOTE ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.
+                    </p>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        Information We Collect
+                      </h3>
+                      <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                        <li>
+                          <strong className="text-slate-100">User Content:</strong> We store the notes, texts, and media you create within the app. Depending on your settings, these are stored locally on your device or synced via secure cloud servers.
+                        </li>
+                        <li>
+                          <strong className="text-slate-100">In-App Purchases:</strong> We do not collect or store your payment card details. All financial transactions are processed securely by third-party services (such as Google Play Billing or Apple App Store). They provide us only with transaction confirmations.
+                        </li>
+                        <li>
+                          <strong className="text-slate-100">Device Information:</strong> We may collect basic diagnostic data, such as device type, OS version, and crash logs, to improve app performance.
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        How We Use Your Information
+                      </h3>
+                      <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                        <li>To provide, maintain, and improve the features of NEOTE.</li>
+                        <li>To process your in-app purchases and subscriptions.</li>
+                        <li>To troubleshoot bugs and protect against security fraud.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        Data Security & Sharing
+                      </h3>
+                      <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                        <li>Your data is yours. We do not sell your personal information or note contents to third parties.</li>
+                        <li>We use industry-standard encryption to protect your synced data.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        Your Rights
+                      </h3>
+                      <p className="leading-relaxed">
+                        You can delete your account or clear your data at any time directly through the app settings.
+                      </p>
+                    </div>
+                  </div>
+
                 </div>
               )}
 
               {/* TERMS & CONDITIONS MODAL */}
               {isTermsModalOpen && (
-                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[85%] overflow-hidden relative">
-                    
-                    {/* Header */}
-                    <div className="flex justify-between items-center mb-4 shrink-0">
-                      <div className="flex items-center space-x-2">
-                        <span className="p-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                          <FileText className="w-3.5 h-3.5" />
-                        </span>
-                        <h4 className="text-xs font-black text-white uppercase tracking-wider">Terms & Conditions</h4>
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          setIsTermsModalOpen(false);
-                        }}
-                        className="text-[10px] font-mono px-2 py-0.5 border border-slate-700 bg-slate-950/40 hover:bg-slate-800 text-slate-300 rounded uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
-                      >
-                        [close]
-                      </button>
+                <div className="absolute inset-0 bg-slate-900 z-[100] flex flex-col p-6 animate-fadeIn">
+                  
+                  {/* Header */}
+                  <div className="flex justify-between items-center mb-5 shrink-0 border-b border-slate-800 pb-3.5">
+                    <div className="flex items-center space-x-2">
+                      <span className="p-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                        <FileText className="w-3.5 h-3.5" />
+                      </span>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">Terms & Conditions</h4>
                     </div>
-
-                    <div className="flex-1 overflow-y-auto pr-1 text-slate-300 space-y-4 text-left font-sans text-xs">
-                      <h2 className="text-sm font-black text-white border-b border-slate-800 pb-1 uppercase tracking-wide">
-                        TERMS AND CONDITIONS
-                      </h2>
-                      <p className="text-[10px] text-slate-500 italic">Last Updated: June 29, 2026</p>
-                      
-                      <p className="leading-relaxed text-slate-300">
-                        Please read these Terms and Conditions ("Terms") carefully before using the NEOTE mobile application operated by us.
-                      </p>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          1. Acceptance of Terms
-                        </h3>
-                        <p className="leading-relaxed">
-                          By downloading or using the app, you agree to be bound by these Terms. If you disagree with any part of the terms, you may not access the service.
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          2. User Accounts & Content
-                        </h3>
-                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
-                          <li>You are responsible for maintaining the confidentiality of your device and account.</li>
-                          <li>You retain full ownership of the content (notes) you create. However, you are solely responsible for ensuring your content does not violate any laws or third-party rights.</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          3. In-App Purchases and Subscriptions
-                        </h3>
-                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
-                          <li>NEOTE offers premium features via in-app purchases or subscriptions.</li>
-                          <li>All purchases are handled via the respective app store (Google Play Store / Apple App Store).</li>
-                          <li><strong className="text-slate-100">Refunds:</strong> Payments are generally non-refundable, and refunds are subject to the terms and conditions of the respective app store platform.</li>
-                          <li>We reserve the right to change our pricing or subscription models at any time with prior notice.</li>
-                        </ul>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          4. Limitation of Liability
-                        </h3>
-                        <p className="leading-relaxed">
-                          The app is provided on an "AS IS" and "AS AVAILABLE" basis. While we strive to protect your data, we are not liable for any data loss, app downtime, or unexpected bugs. Please keep backups of critical notes.
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
-                          5. Termination
-                        </h3>
-                        <p className="leading-relaxed">
-                          We reserve the right to terminate or suspend access to our app immediately, without prior notice, for conduct that we believe violates these Terms.
-                        </p>
-                      </div>
-                    </div>
-
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setIsTermsModalOpen(false);
+                      }}
+                      className="text-[10px] font-mono px-2.5 py-1.5 border border-slate-700 bg-slate-950/40 hover:bg-slate-800 text-slate-300 rounded-xl uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
+                    >
+                      [close]
+                    </button>
                   </div>
+
+                  <div className="flex-1 overflow-y-auto liquid-bubble-scroll text-slate-300 space-y-5 text-left font-sans text-xs pb-10">
+                    <h2 className="text-sm font-black text-white border-b border-slate-800 pb-1 uppercase tracking-wide">
+                      TERMS AND CONDITIONS
+                    </h2>
+                    <p className="text-[10px] text-slate-500 italic">Last Updated: June 29, 2026</p>
+                    
+                    <p className="leading-relaxed text-slate-300">
+                      Please read these Terms and Conditions ("Terms") carefully before using the NEOTE mobile application operated by us.
+                    </p>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        1. Acceptance of Terms
+                      </h3>
+                      <p className="leading-relaxed">
+                        By downloading or using the app, you agree to be bound by these Terms. If you disagree with any part of the terms, you may not access the service.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        2. User Accounts & Content
+                      </h3>
+                      <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                        <li>You are responsible for maintaining the confidentiality of your device and account.</li>
+                        <li>You retain full ownership of the content (notes) you create. However, you are solely responsible for ensuring your content does not violate any laws or third-party rights.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        3. In-App Purchases and Subscriptions
+                      </h3>
+                      <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                        <li>NEOTE offers premium features via in-app purchases or subscriptions.</li>
+                        <li>All purchases are handled via the respective app store (Google Play Store / Apple App Store).</li>
+                        <li><strong className="text-slate-100">Refunds:</strong> Payments are generally non-refundable, and refunds are subject to the terms and conditions of the respective app store platform.</li>
+                        <li>We reserve the right to change our pricing or subscription models at any time with prior notice.</li>
+                      </ul>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        4. Limitation of Liability
+                      </h3>
+                      <p className="leading-relaxed">
+                        The app is provided on an "AS IS" and "AS AVAILABLE" basis. While we strive to protect your data, we are not liable for any data loss, app downtime, or unexpected bugs. Please keep backups of critical notes.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                        5. Termination
+                      </h3>
+                      <p className="leading-relaxed">
+                        We reserve the right to terminate or suspend access to our app immediately, without prior notice, for conduct that we believe violates these Terms.
+                      </p>
+                    </div>
+                  </div>
+
                 </div>
               )}
 
               {/* JAYED AHMED DEVELOPER PROFILE MODAL */}
               {isDevCodeModalOpen && (
-                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-xs shadow-2xl flex flex-col max-h-[85%] overflow-hidden relative">
+                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-xs shadow-2xl flex flex-col max-h-[85%] overflow-hidden relative animate-slide-in">
                     
                     {/* Header */}
                     <div className="flex justify-between items-center mb-6 shrink-0">
@@ -3923,6 +3690,9 @@ export default function App() {
 
                       {/* 2. Action Menu list, styled precisely like the image */}
                       <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-2 scrollbar-none">
+                        
+
+
                         <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest pl-1 block mb-1.5">
                           Actions
                         </span>
@@ -4341,17 +4111,36 @@ export default function App() {
                               purchaseHistory.map(tx => {
                                 const trxCode = tx.trxCode || `GPA.3312-4981-0023-${Math.floor(10000 + Math.random() * 90000)}`;
                                 return (
-                                  <div key={tx.id} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800/80 flex flex-col space-y-1.5 text-left">
+                                  <div 
+                                    key={tx.id} 
+                                    className="p-3 bg-slate-950 rounded-xl border border-slate-800/80 flex flex-col space-y-2 text-left hover:border-slate-700/80 hover:bg-slate-950/90 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 group relative overflow-hidden"
+                                  >
+                                    {/* Left accent strip that highlights on hover */}
+                                    <div 
+                                      className="absolute left-0 top-0 bottom-0 w-[3px] transition-all duration-200 opacity-0 group-hover:opacity-100" 
+                                      style={{ backgroundColor: selectedPreset.primaryColorHex }}
+                                    />
+                                    
                                     <div className="flex items-center justify-between">
                                       <div>
-                                        <span className="text-[10.5px] font-black text-white block font-sans">Bought {tx.amount} CLIP</span>
-                                        <span className="text-[8px] text-slate-500 font-mono italic">{tx.date}</span>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[7px] uppercase font-black px-1 py-0.5 rounded bg-slate-800/80 text-slate-400 font-mono">GOOGLE PLAY PURCHASE</span>
+                                        </div>
+                                        <span className="text-[11px] font-black text-white block font-sans mt-0.5">Bought {tx.amount} CLIP</span>
+                                        <span className="text-[8px] text-slate-400 font-mono">{tx.date}</span>
                                       </div>
-                                      <span className="text-[10px] font-mono font-extrabold" style={{ color: selectedPreset.primaryColorHex }}>{tx.price}</span>
+                                      <div className="text-right">
+                                        <span className="text-[10.5px] font-mono font-black block" style={{ color: selectedPreset.primaryColorHex }}>{tx.price}</span>
+                                        <span className="text-[7.5px] text-emerald-400 font-extrabold uppercase tracking-widest font-mono">SUCCESSFUL</span>
+                                      </div>
                                     </div>
-                                    <div className="flex items-center justify-between bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/40 mt-1">
+
+                                    {/* Receipt style dashed divider */}
+                                    <div className="border-t border-dashed border-slate-800/60 my-1"></div>
+
+                                    <div className="flex items-center justify-between bg-slate-900/60 p-2 rounded-lg border border-slate-800/30 transition-all duration-200 group-hover:bg-slate-900/80">
                                       <div className="flex flex-col">
-                                        <span className="text-[7.5px] uppercase font-bold text-slate-500 tracking-wider">Transaction ID (TRX)</span>
+                                        <span className="text-[7.5px] uppercase font-bold text-slate-500 tracking-wider font-mono">Reference Code (GPA)</span>
                                         <span className="text-[8.5px] font-mono font-semibold text-slate-300 select-all">{trxCode}</span>
                                       </div>
                                       <button
@@ -4361,10 +4150,10 @@ export default function App() {
                                           navigator.clipboard.writeText(trxCode);
                                           triggerNotification('TRX Code Copied! 📋');
                                         }}
-                                        className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors cursor-pointer"
+                                        className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-all cursor-pointer active:scale-90"
                                         title="Copy Transaction ID"
                                       >
-                                        <Copy className="w-3.5 h-3.5" />
+                                        <Copy className="w-3 h-3" />
                                       </button>
                                     </div>
                                   </div>
@@ -4395,27 +4184,15 @@ export default function App() {
               </AnimatePresence>
 
               {/* Native Modern Android Gesture swipe block indicator */}
-              <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-current opacity-25 rounded-full z-40 pointer-events-none"></div>
+              <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-current opacity-25 rounded-full z-45 pointer-events-none"></div>
 
-            </div>
-          </div>
-        </div>
-      </div>
-
-      </main>
-
-      {/* FLOATING GENERAL TOAST NOTIFIER */}
-      {alertNotification && (
-        <div className="fixed bottom-4 right-4 bg-slate-950/95 border-2 border-[#00C087] text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-3 backdrop-blur-md animate-slide-in">
-          <div className="w-2 h-2 rounded-full bg-[#00C087]" style={{ backgroundColor: selectedPreset.primaryColorHex }} />
-          <span className="text-xs font-black tracking-wide font-mono uppercase">{alertNotification}</span>
-        </div>
-      )}
-
-      {/* FOOTER */}
-      <footer className="border-t border-slate-900 bg-black py-6 text-center text-xs text-slate-500 font-mono mt-auto">
-        <span>© 2026 NeoTe Notes App • Secure Offline Personal Diary</span>
-      </footer>
+              {/* FLOATING GENERAL TOAST NOTIFIER */}
+              {alertNotification && (
+                <div className="fixed bottom-4 right-4 bg-slate-950/95 border-2 border-[#00C087] text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-3 backdrop-blur-md animate-slide-in">
+                  <div className="w-2 h-2 rounded-full bg-[#00C087]" style={{ backgroundColor: selectedPreset.primaryColorHex }} />
+                  <span className="text-xs font-black tracking-wide font-mono uppercase">{alertNotification}</span>
+                </div>
+              )}
 
     </div>
   );
