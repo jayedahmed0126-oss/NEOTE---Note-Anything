@@ -1189,11 +1189,20 @@ export default function App() {
     }));
 
     const dateStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Generate a realistic Google Play Console Transaction ID (TRX)
+    const segment1 = Math.floor(1000 + Math.random() * 9000);
+    const segment2 = Math.floor(1000 + Math.random() * 9000);
+    const segment3 = Math.floor(1000 + Math.random() * 9000);
+    const segment4 = Math.floor(10000 + Math.random() * 90000);
+    const generatedTrxCode = `GPA.${segment1}-${segment2}-${segment3}-${segment4}`;
+
     const newTx = {
       id: Math.random().toString(),
       amount,
       price: priceStr,
-      date: dateStr
+      date: dateStr,
+      trxCode: generatedTrxCode
     };
     setPurchaseHistory(prev => [newTx, ...prev]);
 
@@ -3440,6 +3449,180 @@ export default function App() {
                 </div>
               )}
 
+              {/* PRIVACY POLICY MODAL */}
+              {isPrivacyModalOpen && (
+                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[85%] overflow-hidden relative">
+                    
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-4 shrink-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="p-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          <Shield className="w-3.5 h-3.5" />
+                        </span>
+                        <h4 className="text-xs font-black text-white uppercase tracking-wider">Privacy Policy</h4>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setIsPrivacyModalOpen(false);
+                        }}
+                        className="text-[10px] font-mono px-2 py-0.5 border border-slate-700 bg-slate-950/40 hover:bg-slate-800 text-slate-300 rounded uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
+                      >
+                        [close]
+                      </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto pr-1 text-slate-300 space-y-4 text-left font-sans text-xs">
+                      <h2 className="text-sm font-black text-white border-b border-slate-800 pb-1 uppercase tracking-wide">
+                        PRIVACY POLICY
+                      </h2>
+                      <p className="text-[10px] text-slate-500 italic">Effective Date: June 29, 2026</p>
+                      
+                      <p className="leading-relaxed text-slate-300">
+                        Welcome to NEOTE ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.
+                      </p>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          Information We Collect
+                        </h3>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                          <li>
+                            <strong className="text-slate-100">User Content:</strong> We store the notes, texts, and media you create within the app. Depending on your settings, these are stored locally on your device or synced via secure cloud servers.
+                          </li>
+                          <li>
+                            <strong className="text-slate-100">In-App Purchases:</strong> We do not collect or store your payment card details. All financial transactions are processed securely by third-party services (such as Google Play Billing or Apple App Store). They provide us only with transaction confirmations.
+                          </li>
+                          <li>
+                            <strong className="text-slate-100">Device Information:</strong> We may collect basic diagnostic data, such as device type, OS version, and crash logs, to improve app performance.
+                          </li>
+                        </ul>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          How We Use Your Information
+                        </h3>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                          <li>To provide, maintain, and improve the features of NEOTE.</li>
+                          <li>To process your in-app purchases and subscriptions.</li>
+                          <li>To troubleshoot bugs and protect against security fraud.</li>
+                        </ul>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          Data Security & Sharing
+                        </h3>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                          <li>Your data is yours. We do not sell your personal information or note contents to third parties.</li>
+                          <li>We use industry-standard encryption to protect your synced data.</li>
+                        </ul>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          Your Rights
+                        </h3>
+                        <p className="leading-relaxed">
+                          You can delete your account or clear your data at any time directly through the app settings.
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
+              {/* TERMS & CONDITIONS MODAL */}
+              {isTermsModalOpen && (
+                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col max-h-[85%] overflow-hidden relative">
+                    
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-4 shrink-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="p-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          <FileText className="w-3.5 h-3.5" />
+                        </span>
+                        <h4 className="text-xs font-black text-white uppercase tracking-wider">Terms & Conditions</h4>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setIsTermsModalOpen(false);
+                        }}
+                        className="text-[10px] font-mono px-2 py-0.5 border border-slate-700 bg-slate-950/40 hover:bg-slate-800 text-slate-300 rounded uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
+                      >
+                        [close]
+                      </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto pr-1 text-slate-300 space-y-4 text-left font-sans text-xs">
+                      <h2 className="text-sm font-black text-white border-b border-slate-800 pb-1 uppercase tracking-wide">
+                        TERMS AND CONDITIONS
+                      </h2>
+                      <p className="text-[10px] text-slate-500 italic">Last Updated: June 29, 2026</p>
+                      
+                      <p className="leading-relaxed text-slate-300">
+                        Please read these Terms and Conditions ("Terms") carefully before using the NEOTE mobile application operated by us.
+                      </p>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          1. Acceptance of Terms
+                        </h3>
+                        <p className="leading-relaxed">
+                          By downloading or using the app, you agree to be bound by these Terms. If you disagree with any part of the terms, you may not access the service.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          2. User Accounts & Content
+                        </h3>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                          <li>You are responsible for maintaining the confidentiality of your device and account.</li>
+                          <li>You retain full ownership of the content (notes) you create. However, you are solely responsible for ensuring your content does not violate any laws or third-party rights.</li>
+                        </ul>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          3. In-App Purchases and Subscriptions
+                        </h3>
+                        <ul className="list-disc pl-4 space-y-1 text-slate-300 leading-relaxed">
+                          <li>NEOTE offers premium features via in-app purchases or subscriptions.</li>
+                          <li>All purchases are handled via the respective app store (Google Play Store / Apple App Store).</li>
+                          <li><strong className="text-slate-100">Refunds:</strong> Payments are generally non-refundable, and refunds are subject to the terms and conditions of the respective app store platform.</li>
+                          <li>We reserve the right to change our pricing or subscription models at any time with prior notice.</li>
+                        </ul>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          4. Limitation of Liability
+                        </h3>
+                        <p className="leading-relaxed">
+                          The app is provided on an "AS IS" and "AS AVAILABLE" basis. While we strive to protect your data, we are not liable for any data loss, app downtime, or unexpected bugs. Please keep backups of critical notes.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-white uppercase text-[11px] tracking-wide text-indigo-400">
+                          5. Termination
+                        </h3>
+                        <p className="leading-relaxed">
+                          We reserve the right to terminate or suspend access to our app immediately, without prior notice, for conduct that we believe violates these Terms.
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+
               {/* JAYED AHMED DEVELOPER PROFILE MODAL */}
               {isDevCodeModalOpen && (
                 <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
@@ -3774,7 +3957,10 @@ export default function App() {
 
                         {/* Action: Privacy Policy */}
                         <button 
-                          onClick={() => triggerNotification('Privacy Policy: All mock notes data are client-side only and securely isolated.')}
+                          onClick={() => {
+                            setIsPrivacyModalOpen(true);
+                            setIsProfileDrawerOpen(false);
+                          }}
                           className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 transition-all duration-200 hover:scale-[1.02] active:scale-98 cursor-pointer text-left"
                           style={{
                             backgroundColor: themeMode === ThemeMode.DARK ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.9)',
@@ -3800,7 +3986,10 @@ export default function App() {
 
                         {/* Action: Terms & Conditions */}
                         <button 
-                          onClick={() => triggerNotification('Terms & Conditions: Notes playground serves as mockup prototyping tool.')}
+                          onClick={() => {
+                            setIsTermsModalOpen(true);
+                            setIsProfileDrawerOpen(false);
+                          }}
                           className="w-full flex items-center justify-between rounded-xl px-3 py-2.5 transition-all duration-200 hover:scale-[1.02] active:scale-98 cursor-pointer text-left"
                           style={{
                             backgroundColor: themeMode === ThemeMode.DARK ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.9)',
@@ -4149,18 +4338,40 @@ export default function App() {
                                 <p className="text-[8px] text-slate-500 mt-1">Acquire packages to view transaction receipts.</p>
                               </div>
                             ) : (
-                              purchaseHistory.map(tx => (
-                                <div key={tx.id} className="p-2 bg-slate-900 rounded-lg border border-slate-800/80 flex items-center justify-between">
-                                  <div>
-                                    <span className="text-[10px] font-black text-white block font-sans">Bought {tx.amount} CLIP</span>
-                                    <span className="text-[8px] text-slate-500 font-mono italic">{tx.date}</span>
+                              purchaseHistory.map(tx => {
+                                const trxCode = tx.trxCode || `GPA.3312-4981-0023-${Math.floor(10000 + Math.random() * 90000)}`;
+                                return (
+                                  <div key={tx.id} className="p-2.5 bg-slate-900 rounded-xl border border-slate-800/80 flex flex-col space-y-1.5 text-left">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <span className="text-[10.5px] font-black text-white block font-sans">Bought {tx.amount} CLIP</span>
+                                        <span className="text-[8px] text-slate-500 font-mono italic">{tx.date}</span>
+                                      </div>
+                                      <span className="text-[10px] font-mono font-extrabold" style={{ color: selectedPreset.primaryColorHex }}>{tx.price}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/40 mt-1">
+                                      <div className="flex flex-col">
+                                        <span className="text-[7.5px] uppercase font-bold text-slate-500 tracking-wider">Transaction ID (TRX)</span>
+                                        <span className="text-[8.5px] font-mono font-semibold text-slate-300 select-all">{trxCode}</span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText(trxCode);
+                                          triggerNotification('TRX Code Copied! 📋');
+                                        }}
+                                        className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors cursor-pointer"
+                                        title="Copy Transaction ID"
+                                      >
+                                        <Copy className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                   </div>
-                                  <span className="text-[9px] font-mono font-extrabold" style={{ color: selectedPreset.primaryColorHex }}>{tx.price}</span>
-                                </div>
-                              ))
+                                );
+                              })
                             )}
                           </div>
-
 
                         </div>
                       )}
