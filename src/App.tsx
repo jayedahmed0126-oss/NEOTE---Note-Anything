@@ -9,6 +9,8 @@ import {
   Plus, 
   Trash2, 
   Facebook, 
+  Instagram,
+  Save,
   MessageSquare, 
   MessageCircle,
   Send,
@@ -517,6 +519,20 @@ export default function App() {
 
   const [isDevicesOpen, setIsDevicesOpen] = useState(false);
   const [isDevCodeModalOpen, setIsDevCodeModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  
+  // Admin password states
+  const [isAdminPasswordModalOpen, setIsAdminPasswordModalOpen] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [adminPasswordError, setAdminPasswordError] = useState('');
+  
+  // Jayed Ahmed Developer Profile details
+  const [devFacebookId, setDevFacebookId] = useState(() => localStorage.getItem('neote_dev_fb') || 'jayedahmed.dev');
+  const [devWhatsappNumber, setDevWhatsappNumber] = useState(() => localStorage.getItem('neote_dev_wp') || '+8801700000000');
+  const [devInstagramId, setDevInstagramId] = useState(() => localStorage.getItem('neote_dev_insta') || 'jayedahmed_dev');
+  const [isEditingDevLinks, setIsEditingDevLinks] = useState(false);
+
   const [selectedDevFileTab, setSelectedDevFileTab] = useState<'model' | 'service' | 'auth' | 'rules'>('model');
   const [deviceSessions, setDeviceSessions] = useState<DeviceSession[]>(() => {
     const stored = localStorage.getItem('neote_device_sessions');
@@ -2235,7 +2251,10 @@ export default function App() {
                         {/* Facebook icon button with label below */}
                         <div className="flex flex-col items-center space-y-0.5">
                           <button
-                            onClick={() => triggerNotification('Mock Integration: Opening Facebook Quick Link!')}
+                            onClick={() => {
+                              triggerNotification('Opening NeoTe Facebook Page...');
+                              window.open('https://www.facebook.com/profile.php?id=61591134643806', '_blank');
+                            }}
                             className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 text-white cursor-pointer"
                             style={{
                               background: 'linear-gradient(135deg, #1877F2 0%, #166FE5 100%)',
@@ -2269,7 +2288,10 @@ export default function App() {
                         {/* Telegram icon button with label below */}
                         <div className="flex flex-col items-center space-y-0.5">
                           <button
-                            onClick={() => triggerNotification('Mock Integration: Opening Telegram Quick Link!')}
+                            onClick={() => {
+                              triggerNotification('Opening NeoTe Telegram Channel...');
+                              window.open('https://t.me/neoteexbd', '_blank');
+                            }}
                             className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 text-white cursor-pointer"
                             style={{
                               background: 'linear-gradient(135deg, #0088CC 0%, #0077B5 100%)',
@@ -2821,7 +2843,9 @@ export default function App() {
                             <button 
                               type="button"
                               onClick={() => {
-                                setIsAdminPanelOpen(true);
+                                setAdminPasswordInput('');
+                                setAdminPasswordError('');
+                                setIsAdminPasswordModalOpen(true);
                               }}
                               className="w-full text-[10px] uppercase tracking-wider font-extrabold py-2 text-white mt-3.5 rounded-xl transition-all cursor-pointer hover:opacity-95 active:scale-98 text-center shadow"
                               style={{
@@ -3314,320 +3338,198 @@ export default function App() {
                 </div>
               )}
 
-              {/* FLUTTER & FIREBASE DEVELOPER DELIVERABLES MODAL */}
-              {isDevCodeModalOpen && (
+              {/* ADMIN PASSWORD VERIFICATION MODAL */}
+              {isAdminPasswordModalOpen && (
                 <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
-                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 w-full max-w-lg shadow-2xl text-left flex flex-col max-h-[95%] overflow-hidden">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-xs shadow-2xl flex flex-col relative overflow-hidden">
                     
                     {/* Header */}
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="p-1 rounded bg-emerald-950/40 text-[#00C087] border border-[#00C087]/20" style={{ color: selectedPreset.primaryColorHex, borderColor: `${selectedPreset.primaryColorHex}30` }}>
-                            <FileCode className="w-4 h-4" />
-                          </span>
-                          <h4 className="text-sm font-black text-white uppercase tracking-wider">Flutter & Firebase integration</h4>
-                        </div>
-                        <p className="text-[10px] text-slate-400 mt-1">Complete production-ready Dart source files & Security configurations.</p>
+                    <div className="flex justify-between items-center mb-5 shrink-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="p-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          <Shield className="w-3.5 h-3.5 text-amber-500" />
+                        </span>
+                        <h4 className="text-xs font-black text-white uppercase tracking-wider">Security Access</h4>
                       </div>
                       <button 
                         type="button"
-                        onClick={() => setIsDevCodeModalOpen(false)}
-                        className="text-[10px] font-black px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
+                        onClick={() => {
+                          setIsAdminPasswordModalOpen(false);
+                          setAdminPasswordInput('');
+                          setAdminPasswordError('');
+                        }}
+                        className="text-[10px] font-mono px-2 py-0.5 border border-slate-700 bg-slate-950/40 hover:bg-slate-800 text-slate-300 rounded uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
                       >
-                        Close
+                        [cancel]
                       </button>
                     </div>
 
-                    {/* File Selection Tabs */}
-                    <div className="flex border-b border-slate-800 pb-2 space-x-1 mb-3 overflow-x-auto scrollbar-none shrink-0">
-                      {(['model', 'service', 'auth', 'rules'] as const).map((tab) => {
-                        const labels = {
-                          model: 'user_model.dart',
-                          service: 'firebase_service.dart',
-                          auth: 'auth_integration.dart',
-                          rules: 'firestore.rules',
-                        };
-                        const isActive = selectedDevFileTab === tab;
-                        return (
-                          <button
-                            key={tab}
-                            type="button"
-                            onClick={() => setSelectedDevFileTab(tab)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all whitespace-nowrap cursor-pointer ${
-                              isActive 
-                                ? 'text-slate-950 font-black' 
-                                : 'text-slate-400 hover:text-slate-200 bg-slate-900'
-                            }`}
-                            style={isActive ? { backgroundColor: selectedPreset.primaryColorHex } : {}}
-                          >
-                            {labels[tab]}
-                          </button>
-                        );
-                      })}
+                    {/* Centered Lock Icon & Info */}
+                    <div className="text-center mt-3 mb-4 shrink-0 flex flex-col items-center">
+                      <div 
+                        className="w-12 h-12 rounded-full flex items-center justify-center mb-3 border-2 animate-pulse"
+                        style={{
+                          backgroundColor: `${selectedPreset.primaryColorHex}15`,
+                          borderColor: selectedPreset.primaryColorHex,
+                          boxShadow: `0 0 15px ${selectedPreset.primaryColorHex}40`
+                        }}
+                      >
+                        <Lock className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <h2 
+                        className="text-lg font-black tracking-wide text-white uppercase"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      >
+                        Admin Credentials
+                      </h2>
+                      <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] leading-relaxed">
+                        To access the admin panel, please provide the master administrator password.
+                      </p>
                     </div>
 
-                    {/* Quick copy bar */}
-                    <div className="flex justify-between items-center bg-slate-950/60 rounded-xl p-2 mb-3 border border-slate-800/80 shrink-0">
-                      <span className="text-[9px] font-mono text-slate-400 px-2">
-                        {selectedDevFileTab === 'model' && '✓ Serializable User profile state'}
-                        {selectedDevFileTab === 'service' && '✓ Robust firestore write service with diagnostics'}
-                        {selectedDevFileTab === 'auth' && '✓ Firebase signup & profile mapping block'}
-                        {selectedDevFileTab === 'rules' && '✓ Strict requesting UID-matching security rule'}
-                      </span>
+                    {/* Input & Form */}
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (adminPasswordInput === 'P@sSwoRdadmins') {
+                          setIsAdminPasswordModalOpen(false);
+                          setIsAdminPanelOpen(true);
+                          setAdminPasswordInput('');
+                          setAdminPasswordError('');
+                          triggerNotification("Admin access verified!");
+                        } else {
+                          setAdminPasswordError("Access Denied. Incorrect Password.");
+                          triggerNotification("Incorrect admin password!");
+                        }
+                      }}
+                      className="space-y-4"
+                    >
+                      <div className="flex flex-col space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                          Admin Password:
+                        </label>
+                        <input
+                          type="password"
+                          value={adminPasswordInput}
+                          onChange={(e) => setAdminPasswordInput(e.target.value)}
+                          placeholder="••••••••••••••"
+                          autoFocus
+                          className="w-full bg-slate-950/60 border border-slate-800 focus:border-amber-500 text-xs text-center text-slate-100 py-2.5 px-3 rounded-xl transition-all focus:outline-none placeholder-slate-700 tracking-widest font-mono"
+                        />
+                      </div>
+
+                      {adminPasswordError && (
+                        <div className="flex items-center justify-center space-x-1.5 p-2 bg-red-950/30 border border-red-500/20 rounded-xl text-[10px] text-red-400 font-extrabold">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          <span>{adminPasswordError}</span>
+                        </div>
+                      )}
+
                       <button
+                        type="submit"
+                        className="w-full py-2.5 rounded-xl text-white font-black text-xs uppercase tracking-wider text-center transition-all bg-gradient-to-r hover:opacity-95 active:scale-97 shadow"
+                        style={{
+                          background: `linear-gradient(135deg, ${selectedPreset.primaryColorHex} 0%, ${selectedPreset.accentColorHex}C0 100%)`
+                        }}
+                      >
+                        Verify & Unlock
+                      </button>
+                    </form>
+
+                  </div>
+                </div>
+              )}
+
+              {/* JAYED AHMED DEVELOPER PROFILE MODAL */}
+              {isDevCodeModalOpen && (
+                <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fadeIn">
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-xs shadow-2xl flex flex-col max-h-[85%] overflow-hidden relative">
+                    
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-6 shrink-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="p-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          <User className="w-3.5 h-3.5" />
+                        </span>
+                        <h4 className="text-xs font-black text-white uppercase tracking-wider">Developer</h4>
+                      </div>
+                      <button 
                         type="button"
                         onClick={() => {
-                          let textToCopy = '';
-                          if (selectedDevFileTab === 'model') {
-                            textToCopy = `// user_model.dart\nimport 'package:cloud_firestore/cloud_firestore.dart';\n\nclass UserModel {\n  final String uid;\n  final String accountName;\n  final String email;\n  final String phoneNumber;\n  final String country;\n  final int coinBalance;\n  final List<String> ownedThemes;\n  final String activeTheme;\n  final LoginDeviceInfo loginDevice;\n\n  UserModel({\n    required this.uid,\n    required this.accountName,\n    required this.email,\n    required this.phoneNumber,\n    this.country = 'Bangladesh',\n    this.coinBalance = 343,\n    required this.ownedThemes,\n    required this.activeTheme,\n    required this.loginDevice,\n  });\n\n  Map<String, dynamic> toMap() {\n    return {\n      'uid': uid,\n      'accountName': accountName,\n      'email': email,\n      'phoneNumber': phoneNumber,\n      'country': country,\n      'coinBalance': coinBalance,\n      'ownedThemes': ownedThemes,\n      'activeTheme': activeTheme,\n      'loginDevice': loginDevice.toMap(),\n    };\n  }\n\n  factory UserModel.fromMap(Map<String, dynamic> map) {\n    return UserModel(\n      uid: map['uid'] ?? '',\n      accountName: map['accountName'] ?? '',\n      email: map['email'] ?? '',\n      phoneNumber: map['phoneNumber'] ?? '',\n      country: map['country'] ?? 'Bangladesh',\n      coinBalance: map['coinBalance'] is int ? map['coinBalance'] : (map['coinBalance'] as num?)?.toInt() ?? 0,\n      ownedThemes: List<String>.from(map['ownedThemes'] ?? []),\n      activeTheme: map['activeTheme'] ?? '',\n      loginDevice: LoginDeviceInfo.fromMap(map['loginDevice'] ?? {}),\n    );\n  }\n}`;
-                          } else if (selectedDevFileTab === 'service') {
-                            textToCopy = `// firebase_service.dart\nimport 'dart:io';\nimport 'package:cloud_firestore/cloud_firestore.dart';\nimport 'package:firebase_auth/firebase_auth.dart';\nimport 'user_model.dart';\n\nclass FirebaseService {\n  final FirebaseFirestore _db = FirebaseFirestore.instance;\n\n  Future<void> createNewUserInFirestore(UserModel user) async {\n    try {\n      print('--- FIRESTORE INITIATION START ---');\n      await _db.collection('users').doc(user.uid).set(\n            user.toMap(),\n            SetOptions(merge: true),\n          );\n      print('SUCCESS: User document created in Firestore!');\n    } on FirebaseException catch (e) {\n      print('DATABASE ERROR: Code: \${e.code}, Message: \${e.message}');\n      rethrow;\n    } catch (e) {\n      print('UNKNOWN ERROR: \$e');\n      rethrow;\n    }\n  }\n}`;
-                          } else if (selectedDevFileTab === 'auth') {
-                            textToCopy = `// auth_integration_logic.dart\nimport 'package:firebase_auth/firebase_auth.dart';\nimport 'user_model.dart';\nimport 'firebase_service.dart';\n\nclass AuthRepository {\n  final FirebaseAuth _auth = FirebaseAuth.instance;\n  final FirebaseService _dbService = FirebaseService();\n\n  Future<UserCredential?> signUpWithEmailAndPassword({\n    required String accountName,\n    required String email,\n    required String password,\n    required String phoneNumber,\n  }) async {\n    try {\n      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(\n        email: email.trim(),\n        password: password,\n      );\n      final User? firebaseUser = userCredential.user;\n      if (firebaseUser != null) {\n        final LoginDeviceInfo deviceInfo = await _dbService.getDeviceInformation();\n        final UserModel newUser = UserModel(\n          uid: firebaseUser.uid,\n          accountName: accountName.trim(),\n          email: firebaseUser.email ?? email.trim(),\n          phoneNumber: phoneNumber.trim(),\n          country: 'Bangladesh',\n          coinBalance: 343,\n          ownedThemes: ['emerald_green', 'electric_neon_red'],\n          activeTheme: 'emerald_green',\n          loginDevice: deviceInfo,\n        );\n        await _dbService.createNewUserInFirestore(newUser);\n        return userCredential;\n      }\n    } catch (e) {\n      print('Signup/Auth Logic Error: \$e');\n      rethrow;\n    }\n    return null;\n  }\n}`;
-                          } else {
-                            textToCopy = `rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /users/{userId} {\n      allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;\n    }\n  }\n}`;
-                          }
-                          navigator.clipboard.writeText(textToCopy);
-                          triggerNotification('Code copied to your clipboard!');
+                          setIsDevCodeModalOpen(false);
                         }}
-                        className="flex items-center space-x-1 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all cursor-pointer"
+                        className="text-[10px] font-mono px-2 py-0.5 border border-slate-700 bg-slate-950/40 hover:bg-slate-800 text-slate-300 rounded uppercase tracking-wider transition-colors active:scale-95 cursor-pointer"
                       >
-                        <Copy className="w-3 h-3" />
-                        <span>Copy Code</span>
+                        [close]
                       </button>
                     </div>
 
-                    {/* Code Preformatted Container */}
-                    <div className="flex-1 overflow-y-auto rounded-xl bg-slate-950 p-3 border border-slate-800 text-left font-mono text-[10.5px] leading-relaxed scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-                      {selectedDevFileTab === 'model' && (
-                        <pre className="text-emerald-400">
-{`// user_model.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-class UserModel {
-  final String uid;
-  final String accountName;
-  final String email;
-  final String phoneNumber;
-  final String country;
-  final int coinBalance;
-  final List<String> ownedThemes;
-  final String activeTheme;
-  final LoginDeviceInfo loginDevice;
-
-  UserModel({
-    required this.uid,
-    required this.accountName,
-    required this.email,
-    required this.phoneNumber,
-    this.country = 'Bangladesh',
-    this.coinBalance = 343,
-    required this.ownedThemes,
-    required this.activeTheme,
-    required this.loginDevice,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'accountName': accountName,
-      'email': email,
-      'phoneNumber': phoneNumber,
-      'country': country,
-      'coinBalance': coinBalance,
-      'ownedThemes': ownedThemes,
-      'activeTheme': activeTheme,
-      'loginDevice': loginDevice.toMap(),
-    };
-  }
-
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      uid: map['uid'] ?? '',
-      accountName: map['accountName'] ?? '',
-      email: map['email'] ?? '',
-      phoneNumber: map['phoneNumber'] ?? '',
-      country: map['country'] ?? 'Bangladesh',
-      coinBalance: map['coinBalance'] is int 
-          ? map['coinBalance'] 
-          : (map['coinBalance'] as num?)?.toInt() ?? 0,
-      ownedThemes: List<String>.from(map['ownedThemes'] ?? []),
-      activeTheme: map['activeTheme'] ?? '',
-      loginDevice: LoginDeviceInfo.fromMap(map['loginDevice'] ?? {}),
-    );
-  }
-}
-
-class LoginDeviceInfo {
-  final String deviceName;
-  final String deviceModel;
-  final String osVersion;
-  final DateTime lastLoginTimestamp;
-
-  LoginDeviceInfo({
-    required this.deviceName,
-    required this.deviceModel,
-    required this.osVersion,
-    required this.lastLoginTimestamp,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'deviceName': deviceName,
-      'deviceModel': deviceModel,
-      'osVersion': osVersion,
-      'lastLoginTimestamp': Timestamp.fromDate(lastLoginTimestamp),
-    };
-  }
-
-  factory LoginDeviceInfo.fromMap(Map<dynamic, dynamic> map) {
-    DateTime parsedTime;
-    if (map['lastLoginTimestamp'] is Timestamp) {
-      parsedTime = (map['lastLoginTimestamp'] as Timestamp).toDate();
-    } else if (map['lastLoginTimestamp'] is String) {
-      parsedTime = DateTime.parse(map['lastLoginTimestamp']);
-    } else {
-      parsedTime = DateTime.now();
-    }
-
-    return LoginDeviceInfo(
-      deviceName: map['deviceName'] ?? 'Unknown Device',
-      deviceModel: map['deviceModel'] ?? 'Unknown Model',
-      osVersion: map['osVersion'] ?? 'Unknown OS',
-      lastLoginTimestamp: parsedTime,
-    );
-  }
-}`}
-                        </pre>
-                      )}
-
-                      {selectedDevFileTab === 'service' && (
-                        <pre className="text-teal-400">
-{`// firebase_service.dart
-import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'user_model.dart';
-
-class FirebaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  Future<void> createNewUserInFirestore(UserModel user) async {
-    try {
-      print('--- FIRESTORE INITIATION START ---');
-      print('Document Path: users/\${user.uid}');
-      
-      await _db.collection('users').doc(user.uid).set(
-            user.toMap(),
-            SetOptions(merge: true),
-          );
-
-      print('SUCCESS: User document created in Firestore!');
-    } on FirebaseException catch (e) {
-      print('DATABASE ERROR: Code: \${e.code}, Message: \${e.message}');
-      rethrow;
-    } catch (e) {
-      print('UNKNOWN ERROR: \$e');
-      rethrow;
-    }
-  }
-
-  Future<LoginDeviceInfo> getDeviceInformation() async {
-    return LoginDeviceInfo(
-      deviceName: 'Simulator/Web',
-      deviceModel: 'Generic Device',
-      osVersion: Platform.operatingSystem,
-      lastLoginTimestamp: DateTime.now(),
-    );
-  }
-}`}
-                        </pre>
-                      )}
-
-                      {selectedDevFileTab === 'auth' && (
-                        <pre className="text-sky-400">
-{`// auth_integration_logic.dart
-import 'package:firebase_auth/firebase_auth.dart';
-import 'user_model.dart';
-import 'firebase_service.dart';
-
-class AuthRepository {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseService _dbService = FirebaseService();
-
-  Future<UserCredential?> signUpWithEmailAndPassword({
-    required String accountName,
-    required String email,
-    required String password,
-    required String phoneNumber,
-  }) async {
-    try {
-      print('--- AUTH SIGNUP START ---');
-      
-      // 1. Authenticate with Firebase Authentication
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-
-      final User? firebaseUser = userCredential.user;
-
-      if (firebaseUser != null) {
-        // 2. Fetch runtime device parameters
-        final LoginDeviceInfo deviceInfo = await _dbService.getDeviceInformation();
-
-        // 3. Map values to UserModel
-        final UserModel newUser = UserModel(
-          uid: firebaseUser.uid,
-          accountName: accountName.trim(),
-          email: firebaseUser.email ?? email.trim(),
-          phoneNumber: phoneNumber.trim(),
-          country: 'Bangladesh',
-          coinBalance: 343,
-          ownedThemes: ['emerald_green', 'electric_neon_red'],
-          activeTheme: 'emerald_green',
-          loginDevice: deviceInfo,
-        );
-
-        // 4. Save directly under users/{uid} document path
-        await _dbService.createNewUserInFirestore(newUser);
-
-        print('Full account setup complete for: \$accountName');
-        return userCredential;
-      }
-    } on FirebaseAuthException catch (e) {
-      print('AUTHENTICATION ERROR: Code: \${e.code}, Message: \${e.message}');
-      rethrow;
-    } catch (e) {
-      print('GENERAL WORKFLOW ERROR: \$e');
-      rethrow;
-    }
-    return null;
-  }
-}`}
-                        </pre>
-                      )}
-
-                      {selectedDevFileTab === 'rules' && (
-                        <pre className="text-amber-400">
-{`rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Users collection rules: User can only read and write their own profile
-    match /users/{userId} {
-      allow read, create, update, delete: if request.auth != null && request.auth.uid == userId;
-    }
-  }
-}`}
-                        </pre>
-                      )}
+                    {/* Centered Name (Jayed Ahmed) */}
+                    <div className="text-center mt-4 mb-2 shrink-0">
+                      <h2 
+                        className="text-xl font-black tracking-wide text-white"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      >
+                        Jayed Ahmed
+                      </h2>
                     </div>
 
-                    {/* Notice */}
-                    <div className="mt-3 bg-slate-950/40 p-2.5 rounded-xl border border-slate-800 text-[9px] text-slate-400 leading-relaxed shrink-0">
-                      💡 <strong>Implementation Tip:</strong> Ensure that your <code>FirebaseFirestore</code> instance is initialized correctly in your Flutter entry block before calling any write functions.
+                    {/* Elegant Divider Line under Name */}
+                    <div className="w-4/5 mx-auto h-[1.5px] bg-slate-700 mb-6 shrink-0"></div>
+
+                    {/* Facebook, WhatsApp, Instagram rows - Same line inline layout matching the sketch */}
+                    <div className="space-y-4 flex-1 overflow-y-auto px-1 pb-4">
+                      
+                      {/* Facebook Row */}
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[11px] font-bold text-slate-400 w-20 shrink-0">Facebook:</span>
+                        <input
+                          type="text"
+                          value={devFacebookId}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDevFacebookId(val);
+                            localStorage.setItem('neote_dev_fb', val);
+                          }}
+                          placeholder="fb.com/username"
+                          className="flex-1 bg-transparent border-b border-slate-800 focus:border-indigo-500 text-[11px] text-slate-100 py-0.5 transition-all focus:outline-none placeholder-slate-600"
+                        />
+                      </div>
+
+                      {/* WhatsApp Row */}
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[11px] font-bold text-slate-400 w-20 shrink-0">WhatsApp:</span>
+                        <input
+                          type="text"
+                          value={devWhatsappNumber}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDevWhatsappNumber(val);
+                            localStorage.setItem('neote_dev_wp', val);
+                          }}
+                          placeholder="+8801700000000"
+                          className="flex-1 bg-transparent border-b border-slate-800 focus:border-indigo-500 text-[11px] text-slate-100 py-0.5 transition-all focus:outline-none placeholder-slate-600"
+                        />
+                      </div>
+
+                      {/* Instagram Row */}
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[11px] font-bold text-slate-400 w-20 shrink-0">Instagram:</span>
+                        <input
+                          type="text"
+                          value={devInstagramId}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDevInstagramId(val);
+                            localStorage.setItem('neote_dev_insta', val);
+                          }}
+                          placeholder="@username"
+                          className="flex-1 bg-transparent border-b border-slate-800 focus:border-indigo-500 text-[11px] text-slate-100 py-0.5 transition-all focus:outline-none placeholder-slate-600"
+                        />
+                      </div>
+
                     </div>
+
                   </div>
                 </div>
               )}
@@ -4182,10 +4084,12 @@ service cloud.firestore {
                               )}
                               
                               <div 
-                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-all group-hover/plan:scale-110 relative shrink-0"
+                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1 transition-all group-hover/plan:scale-110 relative shrink-0 border-2"
                                 style={{
                                   backgroundColor: `${selectedPreset.primaryColorHex}15`,
                                   color: selectedPreset.primaryColorHex,
+                                  borderColor: selectedPreset.primaryColorHex,
+                                  boxShadow: `0 0 10px ${selectedPreset.primaryColorHex}80, inset 0 0 6px ${selectedPreset.primaryColorHex}40`
                                 }}
                               >
                                 <PremiumPaperclipIcon className="w-5 h-5" glowColor={selectedPreset.primaryColorHex} />
@@ -4257,17 +4161,7 @@ service cloud.firestore {
                             )}
                           </div>
 
-                          {purchaseHistory.length > 0 && (
-                            <button
-                              onClick={() => {
-                                setPurchaseHistory([]);
-                                triggerNotification('Transaction receipts cleared!');
-                              }}
-                              className="w-full py-1.5 bg-red-950/60 hover:bg-red-900/40 text-red-400 text-[9px] font-bold rounded-lg mt-3"
-                            >
-                              Clear Logs
-                            </button>
-                          )}
+
                         </div>
                       )}
 
