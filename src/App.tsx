@@ -47,7 +47,9 @@ import {
   AlertTriangle,
   Pin,
   WifiOff,
-  Wifi
+  Wifi,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { Note, ActiveScreen, ThemeMode, UserAccount, FlutterCodePreset, DeviceSession } from './types';
 import LoginScreen from './components/LoginScreen';
@@ -64,6 +66,47 @@ const getInitials = (name: string) => {
     return (parts[0][0] + parts[1][0]).toUpperCase().slice(0, 2);
   }
   return parts[0].slice(0, 2).toUpperCase();
+};
+
+const getDeviceDetails = () => {
+  const ua = navigator.userAgent;
+  let os = 'Unknown OS';
+  if (/android/i.test(ua)) {
+    os = 'Android';
+  } else if (/iPad|iPhone|iPod/.test(ua)) {
+    os = 'iOS';
+  } else if (/Macintosh/i.test(ua)) {
+    os = 'macOS';
+  } else if (/Windows/i.test(ua)) {
+    os = 'Windows';
+  } else if (/Linux/i.test(ua)) {
+    os = 'Linux';
+  }
+
+  let browser = 'Web';
+  if (/chrome|crios/i.test(ua) && !/edge|edg/i.test(ua) && !/opr/i.test(ua)) {
+    browser = 'Chrome';
+  } else if (/safari/i.test(ua) && !/chrome|crios/i.test(ua)) {
+    browser = 'Safari';
+  } else if (/firefox|fxios/i.test(ua)) {
+    browser = 'Firefox';
+  } else if (/edge|edg/i.test(ua)) {
+    browser = 'Edge';
+  } else if (/opr/i.test(ua)) {
+    browser = 'Opera';
+  }
+
+  const isWebView = /wv|webview|Version\/4.0/i.test(ua) || (window as any).Android !== undefined;
+  const appLabel = isWebView ? 'APK App' : 'Browser';
+
+  return `${os} (${browser} ${appLabel})`;
+};
+
+const getDeviceType = () => {
+  const ua = navigator.userAgent;
+  if (/tablet|ipad/i.test(ua)) return 'tablet';
+  if (/mobile|android|iphone|ipod/i.test(ua)) return 'mobile';
+  return 'desktop';
 };
 import { 
   getFlutterMainCode, 
@@ -469,7 +512,9 @@ export default function App() {
   const [currentDeviceId] = useState<string>(() => {
     let id = localStorage.getItem('neote_device_id_v1');
     if (!id) {
-      id = 'dev-1';
+      const randomPart = Math.random().toString(36).substring(2, 11);
+      const timestampPart = Date.now().toString(36);
+      id = `dev-${randomPart}-${timestampPart}`;
       localStorage.setItem('neote_device_id_v1', id);
     }
     return id;
@@ -580,6 +625,56 @@ export default function App() {
   const [showDeviceFrame, setShowDeviceFrame] = useState<boolean>(true);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const docEl = document.documentElement;
+    if (!document.fullscreenElement) {
+      const requestFS = docEl.requestFullscreen || 
+                        (docEl as any).webkitRequestFullscreen || 
+                        (docEl as any).mozRequestFullScreen || 
+                        (docEl as any).msRequestFullscreen;
+      if (requestFS) {
+        requestFS.call(docEl).then(() => {
+          triggerNotification('Immersive Fullscreen Enabled! 📱');
+        }).catch((err: any) => {
+          console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+          triggerNotification('Fullscreen blocked or unsupported by browser.');
+        });
+      } else {
+        triggerNotification('Fullscreen is not supported on this browser.');
+      }
+    } else {
+      const exitFS = document.exitFullscreen || 
+                     (document as any).webkitExitFullscreen || 
+                     (document as any).mozCancelFullScreen || 
+                     (document as any).msExitFullscreen;
+      if (exitFS) {
+        exitFS.call(document).then(() => {
+          triggerNotification('Exited Fullscreen Mode');
+        }).catch((err: any) => {
+          console.warn(err);
+        });
+      }
+    }
+  };
+
   const slideVariants = {
     enter: (direction: 'left' | 'right') => ({
       x: direction === 'left' ? '100%' : '-100%',
@@ -680,30 +775,28 @@ export default function App() {
             const currentSessIndex = currentSessions.findIndex((s: any) => s.id === deviceId);
             const currentSessionObj: DeviceSession = currentSessIndex !== -1 ? {
               ...currentSessions[currentSessIndex],
+              name: getDeviceDetails(),
+              type: getDeviceType(),
               status: 'online',
               loginTime: new Date().toLocaleString(),
               location: 'Dhaka, Bangladesh (IP: 103.145.22.8)'
             } : {
               id: deviceId,
-              name: navigator.userAgent.includes('Mobile') ? 'Mobile Web Device' : 'Desktop Web Emulator (Current)',
-              type: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
+              name: getDeviceDetails(),
+              type: getDeviceType(),
               status: 'online',
               loginTime: new Date().toLocaleString(),
               location: 'Dhaka, Bangladesh (IP: 103.145.22.8)'
             };
 
-            // Deduplicate all sessions to guarantee strictly 1 session per device name/type (cleaning up duplicates/old random sessions)
+            // Deduplicate all sessions strictly by unique device ID to guarantee multiple distinct devices can coexist!
             const uniqueSessionsMap = new Map<string, DeviceSession>();
             uniqueSessionsMap.set(deviceId, currentSessionObj);
 
             currentSessions.forEach((s: any) => {
               if (s.id === deviceId) return; // current device is already added and prioritized
               
-              // Only keep other devices if they represent a unique physical device name/type
-              const alreadyExists = Array.from(uniqueSessionsMap.values()).some(
-                (existing) => existing.name === s.name && existing.type === s.type
-              );
-              if (!uniqueSessionsMap.has(s.id) && !alreadyExists) {
+              if (!uniqueSessionsMap.has(s.id)) {
                 uniqueSessionsMap.set(s.id, s);
               }
             });
@@ -726,8 +819,8 @@ export default function App() {
 
               const initialSession: DeviceSession = {
                 id: deviceId,
-                name: navigator.userAgent.includes('Mobile') ? 'Mobile Web Device' : 'Desktop Web Emulator (Current)',
-                type: navigator.userAgent.includes('Mobile') ? 'mobile' : 'desktop',
+                name: getDeviceDetails(),
+                type: getDeviceType(),
                 status: 'online',
                 loginTime: new Date().toLocaleString(),
                 location: 'Dhaka, Bangladesh (IP: 103.145.22.8)'
@@ -1065,7 +1158,6 @@ export default function App() {
     }
     
     setNotePinned(updatedStatus);
-    triggerNotification(updatedStatus ? 'Note pinned to top!' : 'Note unpinned');
 
     if (currentUser) {
       setDoc(doc(db, 'notes', note.id), {
@@ -1251,7 +1343,6 @@ export default function App() {
     });
     setIsThemeChangeSplash(true);
     setShowGlobalSplash(true);
-    triggerNotification(`${theme.name} applied successfully! The whole application design adjusted. ✨`);
   };
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -1342,7 +1433,6 @@ export default function App() {
     });
     setIsThemeChangeSplash(true);
     setShowGlobalSplash(true);
-    triggerNotification(`Applied ${preset.name} branding theme!`);
   };
 
   const dynamicStyles = {
@@ -1363,7 +1453,7 @@ export default function App() {
         color: themeMode === ThemeMode.DARK ? '#F1F5F9' : '#0F172A',
         fontFamily: 'Inter, sans-serif'
       }}
-      className="fixed inset-0 w-screen h-screen flex flex-col overflow-hidden relative select-none bg-slate-950 text-slate-100 font-sans selection:bg-[#00C087]/30"
+      className="fixed inset-0 w-screen h-[100dvh] flex flex-col overflow-hidden relative select-none bg-slate-950 text-slate-100 font-sans selection:bg-[#00C087]/30"
     >
       <style>{`
         /* Dynamic Theme Variable Style Overrides */
@@ -1392,6 +1482,14 @@ export default function App() {
         .text-[#00C087] { color: var(--dynamic-primary) !important; }
         span.bg-teal-400 { background-color: var(--dynamic-primary) !important; }
         span.bg-emerald-500\\/15 { background-color: var(--dynamic-primary-15) !important; color: var(--dynamic-primary) !important; }
+
+        /* Safe Area Padding Support when in Immersive Fullscreen */
+        .safe-top-padding {
+          padding-top: calc(0.75rem + env(safe-area-inset-top));
+        }
+        .safe-bottom-padding {
+          padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+        }
       `}</style>
       
       <AnimatePresence mode="wait">
@@ -1415,25 +1513,7 @@ export default function App() {
                 )}
               </AnimatePresence>
               
-              {/* STATUS BAR */}
-              <div className="px-5 pt-3 pb-1 flex justify-between items-center text-[11px] font-mono opacity-80 select-none z-10 font-bold">
-                {/* Simulated Real Time clock */}
-                <span>10:52 PM</span>
-                <div className="flex items-center space-x-1.5">
-                  {isCurrentlyOnline ? (
-                    <span className="text-[10px] text-emerald-500 font-bold">5G</span>
-                  ) : (
-                    <span className="text-[10px] text-red-500 font-bold flex items-center gap-0.5 animate-pulse">
-                      <WifiOff className="w-3 h-3 text-red-500" />
-                      <span>OFFLINE</span>
-                    </span>
-                  )}
-                  {/* Small Battery meter */}
-                  <div className="w-5.5 h-2.5 border border-current rounded-sm p-0.5 flex items-center">
-                    <div className="bg-current h-full w-4/5 rounded-2xs"></div>
-                  </div>
-                </div>
-              </div>
+
 
               {!isCurrentlyOnline ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center select-none relative z-10">
@@ -1804,7 +1884,7 @@ export default function App() {
                 <>
                   {/* 1. TOP HEADER (Account Details, Premium Coins Badge) */}
                   {activeTab !== 2 ? (
-                <div className="px-4 py-2 mt-4 flex justify-between items-center z-10">
+                <div className="px-4 py-2 safe-top-padding flex justify-between items-center z-10">
                   
                   {/* Account Details */}
                   {activeTab !== 1 ? (
@@ -1893,11 +1973,11 @@ export default function App() {
 
                 </div>
               ) : (
-                <div className="mt-6"></div>
+                <div className="safe-top-padding"></div>
               )}
 
               {/* Central Top Dynamic Header Label */}
-              <div className="px-5 py-1 text-center z-10 mt-1">
+              <div className="px-5 py-1 text-center z-10">
                 {activeTab === 0 && (
                   <h2 className="text-[20px] font-black tracking-tight mt-0.5">Notes</h2>
                 )}
@@ -2124,7 +2204,9 @@ export default function App() {
                         {/* WhatsApp icon button with label below */}
                         <div className="flex flex-col items-center space-y-0.5">
                           <button
-                            onClick={() => triggerNotification('Mock Integration: Opening WhatsApp Quick Link!')}
+                            onClick={() => {
+                              window.open('https://wa.me/qr/TFGIWIPOGFMRN1', '_blank');
+                            }}
                             className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 text-white cursor-pointer"
                             style={{
                               background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
@@ -2733,7 +2815,7 @@ export default function App() {
               </div>
 
               {/* 4. BOTTOM FLOATING NAVIGATION BAR (Pill shape styled capsule navbar) */}
-              <div className="p-4 z-20 mt-auto">
+              <div className="p-4 safe-bottom-padding z-20 mt-auto">
                 <div 
                   className="rounded-full flex items-center justify-around h-16 px-4 border transition-all"
                   style={{
@@ -3488,25 +3570,26 @@ export default function App() {
               <AnimatePresence>
                 {isProfileDrawerOpen && (
                   <div className="absolute inset-0 z-50 overflow-hidden flex">
-                    {/* Backdrop */}
+                    {/* Backdrop - optimized without expensive backdrop-blur for butter smooth frame-rates on APK/Android */}
                     <motion.div 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       onClick={() => setIsProfileDrawerOpen(false)}
-                      className="absolute inset-0 bg-black/70 backdrop-blur-[2px] cursor-pointer"
+                      className="absolute inset-0 bg-black/60 cursor-pointer"
                     />
 
-                    {/* Sliding Panel */}
+                    {/* Sliding Panel - optimized with high performance cubic-bezier transition & hardware acceleration will-change hint */}
                     <motion.div
                       initial={{ x: '-100%' }}
                       animate={{ x: '0' }}
                       exit={{ x: '-100%' }}
-                      transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                      transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.35 }}
                       style={{
                         backgroundColor: themeMode === ThemeMode.DARK ? '#000000' : '#FFFFFF',
                         color: themeMode === ThemeMode.DARK ? '#FFFFFF' : '#0F172A',
-                        borderColor: themeMode === ThemeMode.DARK ? `${selectedPreset.primaryColorHex}33` : undefined
+                        borderColor: themeMode === ThemeMode.DARK ? `${selectedPreset.primaryColorHex}33` : undefined,
+                        willChange: 'transform'
                       }}
                       className="absolute inset-y-0 left-0 w-[84%] flex flex-col h-full shadow-2xl overflow-hidden z-50 border-r"
                     >
@@ -3519,7 +3602,7 @@ export default function App() {
                         className="px-4 pb-5 pt-14 flex flex-col items-center text-center relative overflow-hidden shrink-0 border-b w-full"
                       >
                         {/* Upper-left corner: Brand Logo and Title (LOGO REMOVED, VERTICAL THEMED COLOR BAR ADDED) */}
-                        <div className="absolute top-4 left-4 flex items-center bg-slate-950/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-lg overflow-hidden">
+                        <div className="absolute top-4 left-4 flex items-center bg-slate-950/60 px-2.5 py-1 rounded-lg border border-white/10 shadow-lg overflow-hidden">
                           {/* Premium vertical themed color bar */}
                           <div 
                             className="w-1 h-4.5 rounded-full shrink-0 relative z-20"
@@ -3550,7 +3633,7 @@ export default function App() {
                           <ChevronRight className="w-3.5 h-3.5 rotate-180" />
                         </button>
 
-                        {/* STAGGERED INTRO CONTAINER FOR CORE PROFILE ELEMENTS (MADE MORE PROMINENT AND LARGER) */}
+                        {/* STAGGERED INTRO CONTAINER FOR CORE PROFILE ELEMENTS (FULLY OPTIMIZED WITH HIGH-PERFORMANCE GPU-ACCELERATED TRANSITIONS) */}
                         <motion.div 
                           className="flex flex-col items-center mt-auto w-full select-none"
                           initial="hidden"
@@ -3560,17 +3643,17 @@ export default function App() {
                             show: {
                               opacity: 1,
                               transition: {
-                                staggerChildren: 0.08,
-                                delayChildren: 0.1
+                                staggerChildren: 0.05,
+                                delayChildren: 0.08
                               }
                             }
                           }}
                         >
-                          {/* 1. Staggered Avatar (Made grander and larger) */}
+                          {/* 1. Profile Avatar with lightweight scale & slide up */}
                           <motion.div 
                             variants={{
-                              hidden: { scale: 0.5, opacity: 0, y: 15 },
-                              show: { scale: 1, opacity: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 20 } }
+                              hidden: { scale: 0.9, opacity: 0, y: 10 },
+                              show: { scale: 1, opacity: 1, y: 0, transition: { ease: [0.34, 1.56, 0.64, 1], duration: 0.35 } }
                             }}
                             className="relative mb-2.5"
                           >
@@ -3604,23 +3687,23 @@ export default function App() {
                             {/* Live small green check badge */}
                             <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-teal-400 rounded-full ring-2 ring-slate-950"></span>
                           </motion.div>
-
-                          {/* 2. Account Name (Made larger and cleaner) */}
+ 
+                           {/* 2. Account Name with lightweight slide up */}
                           <motion.h3 
                             variants={{
-                              hidden: { y: 10, opacity: 0 },
-                              show: { y: 0, opacity: 1 }
+                              hidden: { y: 8, opacity: 0 },
+                              show: { y: 0, opacity: 1, transition: { ease: "easeOut", duration: 0.25 } }
                             }}
                             className="text-sm font-black tracking-wide leading-tight uppercase text-white drop-shadow-md text-ellipsis overflow-hidden max-w-[220px]"
                           >
                             {userAccount.name || 'User Account'}
                           </motion.h3>
-
-                          {/* 3. Joined Date Label */}
+ 
+                           {/* 3. Joined Date Label with lightweight slide up */}
                           <motion.p 
                             variants={{
-                              hidden: { y: 8, opacity: 0 },
-                              show: { y: 0, opacity: 0.75 }
+                              hidden: { y: 6, opacity: 0 },
+                              show: { y: 0, opacity: 0.75, transition: { ease: "easeOut", duration: 0.25 } }
                             }}
                             className="text-[9px] font-bold mt-0.5 text-white/70"
                           >
@@ -3635,16 +3718,16 @@ export default function App() {
                               }
                             })()}
                           </motion.p>
-
-                          {/* 4. Copyable Info Cards Container */}
+ 
+                           {/* 4. Copyable Info Cards Container */}
                           <div className="w-full mt-3 space-y-1.5 max-w-[240px]">
                             {/* USER ID */}
                             <motion.div 
                               variants={{
-                                hidden: { x: -15, opacity: 0 },
-                                show: { x: 0, opacity: 1 }
+                                hidden: { x: -8, opacity: 0 },
+                                show: { x: 0, opacity: 1, transition: { ease: [0.16, 1, 0.3, 1], duration: 0.3 } }
                               }}
-                              className="backdrop-blur-md bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-left text-white shadow-sm"
+                              className="bg-black/60 border border-white/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-left text-white shadow-sm"
                             >
                               <div>
                                 <span className="text-[10px] block font-bold uppercase tracking-wider text-white/50 mb-0.5">USER ID:</span>
@@ -3653,21 +3736,20 @@ export default function App() {
                               <button 
                                 onClick={() => {
                                   navigator.clipboard.writeText(userAccount.idCode || '#UNKNOWN');
-                                  triggerNotification('User ID copied to clipboard!');
                                 }}
                                 className="p-1 rounded transition-colors cursor-pointer bg-white/5 hover:bg-white/15 text-white"
                               >
                                 <Copy className="w-3 h-3" />
                               </button>
                             </motion.div>
-
+ 
                             {/* Phone number */}
                             <motion.div 
                               variants={{
-                                hidden: { x: 15, opacity: 0 },
-                                show: { x: 0, opacity: 1 }
+                                hidden: { x: 8, opacity: 0 },
+                                show: { x: 0, opacity: 1, transition: { ease: [0.16, 1, 0.3, 1], duration: 0.3 } }
                               }}
-                              className="backdrop-blur-md bg-black/45 border border-white/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-left text-white shadow-sm"
+                              className="bg-black/60 border border-white/10 rounded-lg px-2.5 py-1.5 flex items-center justify-between text-left text-white shadow-sm"
                             >
                               <div>
                                 <span className="text-[10px] block font-bold uppercase tracking-wider text-white/50">Phone:</span>
@@ -3676,7 +3758,6 @@ export default function App() {
                               <button 
                                 onClick={() => {
                                   navigator.clipboard.writeText(userAccount.phone || '01XXXXXXXXX');
-                                  triggerNotification('Phone number copied to clipboard!');
                                 }}
                                 className="p-1 rounded transition-colors cursor-pointer bg-white/5 hover:bg-white/15 text-white"
                               >
@@ -3820,6 +3901,27 @@ export default function App() {
                           type="button"
                           onClick={async () => {
                             setIsProfileDrawerOpen(false);
+                            if (currentUser) {
+                              try {
+                                const userDocRef = doc(db, 'users', currentUser.uid);
+                                const deviceId = localStorage.getItem('neote_device_id_v1') || 'dev-1';
+                                const updatedSessions = deviceSessions.map(s => {
+                                  if (s.id === deviceId) {
+                                    return {
+                                      ...s,
+                                      status: 'offline' as const,
+                                      logoutTime: new Date().toLocaleString()
+                                    };
+                                  }
+                                  return s;
+                                });
+                                await setDoc(userDocRef, {
+                                  deviceSessions: updatedSessions
+                                }, { merge: true });
+                              } catch (dbErr) {
+                                console.warn("Failed to update logout session status:", dbErr);
+                              }
+                            }
                             try {
                               await signOut(auth);
                             } catch (e) {
@@ -4183,8 +4285,7 @@ export default function App() {
                 )}
               </AnimatePresence>
 
-              {/* Native Modern Android Gesture swipe block indicator */}
-              <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-current opacity-25 rounded-full z-45 pointer-events-none"></div>
+
 
               {/* FLOATING GENERAL TOAST NOTIFIER */}
               {alertNotification && (

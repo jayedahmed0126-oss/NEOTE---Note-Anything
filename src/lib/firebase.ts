@@ -18,7 +18,7 @@ import {
   deleteUser as realDeleteUser
 } from 'firebase/auth';
 import { 
-  getFirestore, 
+  initializeFirestore, 
   doc as realDoc, 
   collection as realCollection, 
   query as realQuery, 
@@ -92,9 +92,12 @@ let realAuth: any = null;
 if (isConfigValid) {
   try {
     firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    realDb = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId || undefined);
+    // Enable force long polling to bypass ISP/mobile data carrier WebSocket and gRPC blockages (highly common on mobile operator networks)
+    realDb = initializeFirestore(firebaseApp, {
+      experimentalForceLongPolling: true
+    }, firebaseConfig.firestoreDatabaseId || undefined);
     realAuth = getAuth(firebaseApp);
-    console.log("🔥 Successfully connected to live, custom Firebase project:", firebaseConfig.projectId);
+    console.log("🔥 Successfully connected to live, custom Firebase project with resilient Long Polling enabled:", firebaseConfig.projectId);
   } catch (e) {
     console.error("❌ Failed to initialize real Firebase with the provided config. Falling back to Mock.", e);
   }

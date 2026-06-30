@@ -369,7 +369,7 @@ export default function LoginScreen({ selectedPreset, themeMode, onLogin }: Logi
 
   return (
     <div 
-      className="absolute inset-0 z-50 flex flex-col justify-between overflow-y-auto px-5 py-7 select-none animate-fadeIn"
+      className="absolute inset-0 z-50 flex flex-col justify-between overflow-y-auto px-5 pt-8 safe-top-padding pb-8 safe-bottom-padding select-none animate-fadeIn"
       style={{
         backgroundColor: '#030712', // Dark glow container matching black canvas
         color: '#E2E8F0'
